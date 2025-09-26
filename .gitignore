@@ -1,0 +1,38 @@
+
+# --- Fichiers Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Environnements virtuels ---
+venv/
+.env/
+.venv/
+env 
+env.bak/
+
+# --- Fichiers systèmes ---
+.DS_Store
+Thumbs.db
+
+# --- Logs et sorties ---
+*.log
+*.pot
+*.mo
+
+# --- Fichiers générés par Scrapy ---
+*.csv
+*.json
+*.xml
+
+# --- Config perso ---
+.idea/
+.vscode/
+*.sqlite3
+
+# --- Fichiers de test ---; h
+.history
+coverage
+.tox
+
+

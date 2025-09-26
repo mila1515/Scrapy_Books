@@ -1,6 +1,7 @@
 # pipelines.py
 import re
 import sqlite3
+import scrapy
 
 class CleanPipeline:
     """Nettoie price -> float, rating -> int, stock -> int"""
@@ -8,7 +9,6 @@ class CleanPipeline:
         # price "£51.77" -> 51.77
         price = item.get('price')
         if price:
-            # on enlève tout sauf chiffres et '.'
             cleaned = re.sub(r'[^\d.]', '', price)
             try:
                 item['price'] = float(cleaned)
@@ -29,8 +29,22 @@ class CleanPipeline:
 
         return item
 
+
+class DuplicatesLoggerPipeline:
+    def __init__(self):
+        self.seen = set()
+
+    def process_item(self, item, spider):
+        if item['url'] in self.seen:
+            spider.logger.info(f"Doublon ignoré: {item['title']}")
+            raise scrapy.exceptions.DropItem(f"Doublon ignoré: {item['title']}")
+        else:
+            self.seen.add(item['url'])
+            return item
+
+
 class SQLitePipeline:
-    """Insère les items nettoyés dans une base SQLite simple"""
+    """Insère les items nettoyés dans SQLite et ignore les doublons sur l'URL"""
     def open_spider(self, spider):
         self.conn = sqlite3.connect('books.db')
         self.cur = self.conn.cursor()
@@ -42,24 +56,27 @@ class SQLitePipeline:
                 rating INTEGER,
                 category TEXT,
                 stock INTEGER,
-                url TEXT
+                url TEXT UNIQUE
             )
-        ''')
+        ''')  # Ajout de UNIQUE sur URL
         self.conn.commit()
 
     def process_item(self, item, spider):
-        self.cur.execute(
-            'INSERT INTO books (title, price, rating, category, stock, url) VALUES (?,?,?,?,?,?)',
-            (
-                item.get('title'),
-                item.get('price'),
-                item.get('rating'),
-                item.get('category'),
-                item.get('stock', 0),
-                item.get('url')
+        try:
+            self.cur.execute(
+                'INSERT OR IGNORE INTO books (title, price, rating, category, stock, url) VALUES (?,?,?,?,?,?)',
+                (
+                    item.get('title'),
+                    item.get('price'),
+                    item.get('rating'),
+                    item.get('category'),
+                    item.get('stock', 0),
+                    item.get('url')
+                )
             )
-        )
-        self.conn.commit()
+            self.conn.commit()
+        except sqlite3.Error as e:
+            spider.logger.error(f"Erreur SQLite: {e}")
         return item
 
     def close_spider(self, spider):

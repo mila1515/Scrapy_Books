@@ -15,8 +15,10 @@ NEWSPIDER_MODULE = "monprojet.spiders"
 ADDONS = {}
 
 # Configurez les pipelines d'items
+
 ITEM_PIPELINES = {
     'monprojet.pipelines.CleanPipeline': 300,
+    'monprojet.pipelines.DuplicatesLoggerPipeline': 400,
     'monprojet.pipelines.SQLitePipeline': 800,
 }
 
@@ -91,3 +93,5 @@ DOWNLOAD_DELAY = 1
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
+
+

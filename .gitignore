@@ -34,6 +34,6 @@ Thumbs.db
 .history
 coverage
 .tox
-
+.env 
 .csv
 .history

@@ -6,7 +6,6 @@
 from scrapy import signals
 
 # useful for handling different item types with a single interface
-from itemadapter import ItemAdapter
 
 
 class MonprojetSpiderMiddleware:
@@ -68,6 +67,13 @@ class MonprojetDownloaderMiddleware:
     def process_request(self, request, spider):
         # Called for each request that goes through the downloader
         # middleware.
+
+        # Example usage of 'spider' argument to avoid unused argument error
+        spider.logger.debug(f"Processing request for spider: {spider.name}")
+        
+        # Modifier le User-Agent pour toutes les requêtes
+        request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' \
+                                        '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
         # Must either:
         # - return None: continue processing this request

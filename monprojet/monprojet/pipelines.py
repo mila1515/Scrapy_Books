@@ -1,32 +1,13 @@
-# pipelines.py
 import re
 import sqlite3
 import scrapy
+from datetime import datetime
+
 
 class CleanPipeline:
-    """Nettoie price -> float, rating -> int, stock -> int"""
+    """Pipeline de nettoyage (laissé pour compatibilité)"""
     def process_item(self, item, spider):
-        # price "£51.77" -> 51.77
-        price = item.get('price')
-        if price:
-            cleaned = re.sub(r'[^\d.]', '', price)
-            try:
-                item['price'] = float(cleaned)
-            except ValueError:
-                item['price'] = None
-
-        # rating (ex: 'Three') -> 3
-        rating_map = {'One': 1, 'Two': 2, 'Three': 3, 'Four': 4, 'Five': 5}
-        rating = item.get('rating')
-        if rating:
-            item['rating'] = rating_map.get(rating, None)
-
-        # stock : si disponible
-        stock = item.get('stock')
-        if stock:
-            m = re.search(r'(\d+)', stock)
-            item['stock'] = int(m.group(1)) if m else 0
-
+        # Le nettoyage est maintenant géré par l'ItemLoader
         return item
 
 
@@ -45,6 +26,7 @@ class DuplicatesLoggerPipeline:
 
 class SQLitePipeline:
     """Insère les items nettoyés dans SQLite et ignore les doublons sur l'URL"""
+
     def open_spider(self, spider):
         self.conn = sqlite3.connect('books.db')
         self.cur = self.conn.cursor()
@@ -56,22 +38,36 @@ class SQLitePipeline:
                 rating INTEGER,
                 category TEXT,
                 stock INTEGER,
-                url TEXT UNIQUE
+                url TEXT UNIQUE,
+                created_at TEXT
             )
-        ''')  # Ajout de UNIQUE sur URL
+        ''')
         self.conn.commit()
 
     def process_item(self, item, spider):
+        # Si le stock est None, on met -1 pour signaler qu'il y a un problème
+        stock = item.get('stock')
+        if stock is None:
+            stock = -1
+            spider.logger.warning(f"Stock introuvable pour {item.get('title')}")
+
+        created_at = datetime.now().isoformat(timespec="seconds")
+
         try:
             self.cur.execute(
-                'INSERT OR IGNORE INTO books (title, price, rating, category, stock, url) VALUES (?,?,?,?,?,?)',
+                '''
+                INSERT OR IGNORE INTO books 
+                (title, price, rating, category, stock, url, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''',
                 (
                     item.get('title'),
                     item.get('price'),
                     item.get('rating'),
                     item.get('category'),
-                    item.get('stock', 0),
-                    item.get('url')
+                    stock,
+                    item.get('url'),
+                    created_at
                 )
             )
             self.conn.commit()

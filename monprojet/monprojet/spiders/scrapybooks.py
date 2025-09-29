@@ -1,48 +1,61 @@
-# spiders/scrapybooks.py
 import scrapy
 from ..items import BookItem
+from ..itemloaders import BookLoader
+import re
 
 class ScrapybooksSpider(scrapy.Spider):
-    # Nom du spider (doit correspondre à celui généré par genspider)
     name = "scrapybooks"
-
-    # Domaine autorisé — matching avec la commande genspider
     allowed_domains = ["books.toscrape.com"]
-
-    # Point d'entrée
-    start_urls = ["http://books.toscrape.com/"]
+    start_urls = ["http://books.toscrape.com/catalogue/page-1.html"]
 
     def parse(self, response):
-        # Pour chaque bloc livre sur la page
         for bloc in response.css('article.product_pod'):
-            item = BookItem()
+            # On crée un loader en liant l'item, le bloc et la réponse
+            loader = BookLoader(item=BookItem(), selector=bloc, response=response)
 
-            # titre (stocké dans l'attribut title de la balise <a>)
-            item['title'] = bloc.css('h3 a::attr(title)').get()
+            # Extraction des champs de base
+            loader.add_css('title', 'h3 a::attr(title)')
+            loader.add_css('price', 'p.price_color::text')
+            loader.add_css('rating', 'p.star-rating::attr(class)')
+            
+            # On récupère l'URL du livre
+            book_url = response.urljoin(bloc.css('h3 a::attr(href)').get())
+            loader.add_value('url', book_url)
+            
+            # On suit le lien vers la page détaillée pour récupérer le stock et la catégorie
+            yield scrapy.Request(
+                book_url,
+                callback=self.parse_book_detail,
+                meta={'loader': loader}
+            )
 
-            # prix : texte comme '£51.77' — on nettoiera dans le pipeline
-            item['price'] = bloc.css('p.price_color::text').get()
-
-            # rating : la classe p.star-rating Three|Four... (string)
-            # on récupère la classe et on la transformera en int plus tard
-            rating_class = bloc.css('p.star-rating').attrib.get('class', '')
-            # rating_class ressemble à 'star-rating Three' -> on garde le mot final
-            item['rating'] = rating_class.split()[-1] if rating_class else None
-
-            # url de la page du livre (relative -> absolute via response.urljoin)
-            relative = bloc.css('h3 a::attr(href)').get()
-            item['url'] = response.urljoin(relative)
-
-            # category : la catégorie est dans le fil d'ariane de la page liste —
-            # ici on prend la catégorie de la page courante (s'il y a plusieurs niveaux,
-            # on récupère le dernier lien utile)
-            item['category'] = response.css('ul.breadcrumb li a::text').getall()[-1].strip()
-
-            # stock : extrait de la page détail seulement — on peut naviguer vers la page
-            # du livre si on veut obtenir des infos additionnelles. Ici on yield item tel quel.
-            yield item
-
-        # pagination : suivre le lien "next" s'il existe
+        # Pagination
         next_page = response.css('li.next a::attr(href)').get()
         if next_page:
             yield response.follow(next_page, callback=self.parse)
+
+
+        
+
+    def parse_book_detail(self, response):
+        loader = response.meta['loader']
+
+        # Extraction du stock depuis la page détaillée (nettoyé)
+        stock_text = response.css('p.instock.availability::text').getall()
+        stock_text = " ".join(s.strip() for s in stock_text if s.strip())
+        self.logger.debug(f"Texte du stock nettoyé: {stock_text}")
+
+        # Extraction du nombre avec regex
+        stock_match = re.search(r'\((\d+)\s+available\)', stock_text)
+        stock_qty = int(stock_match.group(1)) if stock_match else 0
+        self.logger.debug(f"Quantité extraite: {stock_qty}")
+
+        # Ajout du stock à l'item
+        loader.add_value('stock', stock_qty)
+
+        # Extraction de la catégorie depuis le breadcrumb
+        category = response.css('ul.breadcrumb li a::text').getall()
+        if len(category) > 2:  # Home > Books > Catégorie
+            loader.add_value('category', category[2])
+
+        yield loader.load_item()

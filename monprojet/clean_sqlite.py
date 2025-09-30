@@ -1,21 +1,24 @@
 import sqlite3
 
-conn = sqlite3.connect("books.db")
+# Chemin vers ta base
+db_path = r"C:\Users\Utilisateur\Desktop\simplon_dev_ia\scr\Scrapy_Books\monprojet\books.db"
+
+conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
-# Supprimer les doublons sur title + url en gardant la première occurrence
+# Supprimer les doublons en gardant la première occurrence
 cur.execute("""
 DELETE FROM books
 WHERE id NOT IN (
     SELECT MIN(id)
     FROM books
-    GROUP BY title, url
+    GROUP BY url
 )
 """)
 conn.commit()
 
-# Vérifier le nombre de livres uniques
+# Vérifier combien de livres uniques restent
 cur.execute("SELECT COUNT(*) FROM books")
-print("Nombre de livres uniques :", cur.fetchone()[0])
+print("Nombre de livres uniques après nettoyage:", cur.fetchone()[0])
 
 conn.close()

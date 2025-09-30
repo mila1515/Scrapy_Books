@@ -30,9 +30,9 @@ class ScrapybooksSpider(scrapy.Spider):
             )
 
         # Pagination
-        next_page = response.css('li.next a::attr(href)').get()
+        next_page = response.css('li.next a::attr(href)').get()   # Récupère le lien de la page suivante
         if next_page:
-            yield response.follow(next_page, callback=self.parse)
+            yield response.follow(next_page, callback=self.parse)   
 
 
         
@@ -41,14 +41,14 @@ class ScrapybooksSpider(scrapy.Spider):
         loader = response.meta['loader']
 
         # Extraction du stock depuis la page détaillée (nettoyé)
-        stock_text = response.css('p.instock.availability::text').getall()
-        stock_text = " ".join(s.strip() for s in stock_text if s.strip())
-        self.logger.debug(f"Texte du stock nettoyé: {stock_text}")
+        stock_text = response.css('p.instock.availability::text').getall()   # Récupère tout le texte dans le paragraphe
+        stock_text = " ".join(s.strip() for s in stock_text if s.strip())    # Nettoie et joint les parties
+        self.logger.debug(f"Texte du stock nettoyé: {stock_text}")           # Log pour vérifier
 
         # Extraction du nombre avec regex
-        stock_match = re.search(r'\((\d+)\s+available\)', stock_text)
-        stock_qty = int(stock_match.group(1)) if stock_match else 0
-        self.logger.debug(f"Quantité extraite: {stock_qty}")
+        stock_match = re.search(r'\((\d+)\s+available\)', stock_text) # Cherche un nombre suivi de " available"
+        stock_qty = int(stock_match.group(1)) if stock_match else 0   # Si pas trouvé, on met 0
+        self.logger.debug(f"Quantité extraite: {stock_qty}")          
 
         # Ajout du stock à l'item
         loader.add_value('stock', stock_qty)
@@ -56,6 +56,6 @@ class ScrapybooksSpider(scrapy.Spider):
         # Extraction de la catégorie depuis le breadcrumb
         category = response.css('ul.breadcrumb li a::text').getall()
         if len(category) > 2:  # Home > Books > Catégorie
-            loader.add_value('category', category[2])
+            loader.add_value('category', category[2]) # La catégorie est le 3ème élément
 
-        yield loader.load_item()
+        yield loader.load_item() # On retourne l'item finalisé

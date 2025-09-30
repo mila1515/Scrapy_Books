@@ -3,8 +3,15 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import random
 from scrapy import signals
 
+
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+]
 # useful for handling different item types with a single interface
 
 
@@ -40,7 +47,7 @@ class MonprojetSpiderMiddleware:
         # (from other spider middleware) raises an exception.
 
         # Should return either None or an iterable of Request or item objects.
-        pass
+        spider.logger.error(f"Erreur spider: {exception}")
 
     async def process_start(self, start):
         # Called with an async iterator over the spider start() method or the
@@ -69,12 +76,11 @@ class MonprojetDownloaderMiddleware:
         # middleware.
 
         # Example usage of 'spider' argument to avoid unused argument error
-        spider.logger.debug(f"Processing request for spider: {spider.name}")
+        #spider.logger.debug(f"Processing request for spider: {spider.name}")
         
         # Modifier le User-Agent pour toutes les requêtes
-        request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' \
-                                        '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-
+        request.headers['User-Agent'] = random.choice(USER_AGENTS)
+    
         # Must either:
         # - return None: continue processing this request
         # - or return a Response object
@@ -95,12 +101,12 @@ class MonprojetDownloaderMiddleware:
     def process_exception(self, request, exception, spider):
         # Called when a download handler or a process_request()
         # (from other downloader middleware) raises an exception.
-
+        spider.logger.error(f"Erreur téléchargement {request.url}: {exception}")
         # Must either:
         # - return None: continue processing this exception
         # - return a Response object: stops process_exception() chain
         # - return a Request object: stops process_exception() chain
-        pass
+        return None
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)

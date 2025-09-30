@@ -20,20 +20,21 @@ ITEM_PIPELINES = {
     'monprojet.pipelines.CleanPipeline': 300,
     'monprojet.pipelines.DuplicatesLoggerPipeline': 400,
     'monprojet.pipelines.SQLitePipeline': 800,
+    'monprojet.pipelines.PostgresPipeline': 900,
 }
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "monprojet (+http://www.yourdomain.com)"
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+#USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
 
-# Obey robots.txt rules
+# Obey robots.txt rules (à laisser à True pour respecter le site)
 ROBOTSTXT_OBEY = True
 
 # Concurrency and throttling settings
 #CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 1  # ça évite de surcharger le site et évite les blocages.
-DOWNLOAD_DELAY = 1
+DOWNLOAD_DELAY = 1 # Délai entre les requêtes (en secondes)
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
@@ -58,7 +59,7 @@ DOWNLOAD_DELAY = 1
 
 DOWNLOADER_MIDDLEWARES = {
     "monprojet.middlewares.MonprojetDownloaderMiddleware": 543,
-}
+}  # Le numéro indique l'ordre d'exécution (plus petit = plus tôt), le 543 est un bon compromis. 
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
@@ -87,13 +88,14 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-#HTTPCACHE_ENABLED = True
-#HTTPCACHE_EXPIRATION_SECS = 0
-#HTTPCACHE_DIR = "httpcache"
-#HTTPCACHE_IGNORE_HTTP_CODES = []
-#HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+#HTTPCACHE_ENABLED = True  # Utile pour le développement, à désactiver en production
+#HTTPCACHE_EXPIRATION_SECS = 86400     # 1 jour (les images sont re-téléchargées au bout d'un jour)
+HTTPCACHE_DIR = "httpcache"  # Dossier où sont stockées les requêtes en cache
+#HTTPCACHE_IGNORE_HTTP_CODES = []  # On ne met pas 404 ici pour voir les erreurs
+#HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"   # Stockage sur le disque
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
 
 
+LOG_LEVEL = "DEBUG"  # Pour avoir plus de détails dans les logs. En production, mettre à WARNING ou ERROR

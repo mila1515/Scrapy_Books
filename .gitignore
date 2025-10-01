@@ -37,3 +37,7 @@ coverage
 .env 
 .csv
 .history
+
+books.db  
+.books.db
+*.sqlite3

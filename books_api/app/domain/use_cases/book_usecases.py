@@ -137,6 +137,13 @@ class BookUseCases:
             Dict[str, Any]: Un dictionnaire contenant diverses statistiques sur les livres,
             y compris des analyses détaillées par catégorie, prix et disponibilité.
             
+            La réponse inclut :
+            - Vue d'ensemble (total, en stock, valeur, etc.)
+            - Analyse des prix (moyenne, min, max, distribution)
+            - Analyse par catégorie avec titres d'exemples
+            - Meilleurs livres par note avec détails complets
+            - Livres récemment ajoutés
+            
         Raises:
             DatabaseError: Si une erreur survient lors du calcul des statistiques.
         """
@@ -178,11 +185,17 @@ class BookUseCases:
             books_in_stock = [b for b in books if b.stock > 0]
             out_of_stock = [b for b in books if b.stock == 0]
             
-            # Analyse des prix
+            # Analyse des prix avec détails des livres
             prices = [b.price for b in books]
             avg_price = sum(prices) / len(prices) if prices else 0
-            min_price = min(prices) if prices else 0
-            max_price = max(prices) if prices else 0
+            
+            # Livre le moins cher
+            min_price_book = min(books, key=lambda x: x.price) if books else None
+            min_price = min_price_book.price if min_price_book else 0
+            
+            # Livre le plus cher
+            max_price_book = max(books, key=lambda x: x.price) if books else None
+            max_price = max_price_book.price if max_price_book else 0
             
             # Distribution des prix par tranches
             price_ranges = {
@@ -208,10 +221,11 @@ class BookUseCases:
                 else:
                     price_ranges["100+"] += 1
             
-            # Analyse par catégorie
+            # Analyse par catégorie avec exemples de livres
             categories = {}
             category_prices = {}
             category_counts = {}
+            category_examples = {}
             
             for book in books:
                 if book.category:
@@ -222,8 +236,20 @@ class BookUseCases:
                     if book.category not in category_prices:
                         category_prices[book.category] = 0.0
                         category_counts[book.category] = 0
+                        category_examples[book.category] = []
+                    
                     category_prices[book.category] += book.price
                     category_counts[book.category] += 1
+                    
+                    # Garder jusqu'à 3 exemples par catégorie
+                    if len(category_examples[book.category]) < 3:
+                        category_examples[book.category].append({
+                            "id": book.id,
+                            "title": book.title,
+                            "price": book.price,
+                            "stock": book.stock,
+                            "rating": book.rating if hasattr(book, 'rating') else None
+                        })
             
             # Calcul des moyennes par catégorie
             category_avg_price = {
@@ -264,24 +290,47 @@ class BookUseCases:
                     reverse=True
                 )[:5]
 
-            # Préparation des résultats
+            # Préparation des résultats avec plus de détails
             stats = {
                 "overview": {
                     "total_books": len(books),
                     "total_in_stock": len(books_in_stock),
                     "out_of_stock_count": len(out_of_stock),
-                    "total_value": round(sum(b.price * b.stock for b in books_in_stock), 2)
+                    "out_of_stock_titles": [b.title for b in out_of_stock][:5],  # 5 premiers titres en rupture
+                    "total_value": round(sum(b.price * b.stock for b in books_in_stock), 2),
+                    "average_value_per_book": round(avg_price, 2)
                 },
                 "price_analysis": {
                     "average_price": round(avg_price, 2),
-                    "min_price": round(min_price, 2),
-                    "max_price": round(max_price, 2),
+                    "min_price": {
+                        "value": round(min_price, 2),
+                        "book": {
+                            "title": min_price_book.title if min_price_book else None,
+                            "id": min_price_book.id if min_price_book else None,
+                            "category": min_price_book.category if min_price_book else None
+                        }
+                    },
+                    "max_price": {
+                        "value": round(max_price, 2),
+                        "book": {
+                            "title": max_price_book.title if max_price_book else None,
+                            "id": max_price_book.id if max_price_book else None,
+                            "category": max_price_book.category if max_price_book else None
+                        }
+                    },
                     "price_distribution": price_ranges
                 },
                 "category_analysis": {
-                    "categories_count": categories,
+                    "categories": [
+                        {
+                            "name": cat,
+                            "count": count,
+                            "average_price": category_avg_price.get(cat, 0),
+                            "example_books": category_examples.get(cat, [])
+                        }
+                        for cat, count in categories.items()
+                    ],
                     "top_category": top_category,
-                    "category_price_avg": category_avg_price,
                     "total_categories": len(categories)
                 },
                 "stock_analysis": {
@@ -289,14 +338,33 @@ class BookUseCases:
                     "min_stock": min_stock,
                     "max_stock": max_stock,
                     "low_stock_books": low_stock_books,
-                    "low_stock_count": len(low_stock_books)
+                    "low_stock_count": len(low_stock_books),
+                    "best_sellers": [  # Exemple de 3 livres avec le plus grand stock
+                        {"id": b.id, "title": b.title, "stock": b.stock, "category": b.category}
+                        for b in sorted(books_in_stock, key=lambda x: x.stock, reverse=True)[:3]
+                    ]
                 },
                 "rating_analysis": {
                     "books_with_rating": sum(1 for b in books if hasattr(b, 'rating') and b.rating is not None),
                     "average_rating": round(
                         sum(b.rating for b in books if hasattr(b, 'rating') and b.rating is not None) / 
                         sum(1 for b in books if hasattr(b, 'rating') and b.rating is not None), 2
-                    ) if any(hasattr(b, 'rating') and b.rating is not None for b in books) else None
+                    ) if any(hasattr(b, 'rating') and b.rating is not None for b in books) else None,
+                    "top_rated_books": [
+                        {
+                            "id": b.id,
+                            "title": b.title,
+                            "rating": b.rating,
+                            "price": b.price,
+                            "category": b.category,
+                            "in_stock": b.stock > 0
+                        }
+                        for b in sorted(
+                            [b for b in books if hasattr(b, 'rating') and b.rating is not None],
+                            key=lambda x: x.rating,
+                            reverse=True
+                        )[:5]
+                    ]
                 }
             }
 

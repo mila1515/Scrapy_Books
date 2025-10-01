@@ -1,91 +1,137 @@
-# Scrapy Books - Scraper avec SQLite et PostgreSQL
+# Projet Scrapy Books avec API
 
-Ce projet Scrapy scrape le site [books.toscrape.com](http://books.toscrape.com/) et stocke les données des livres dans **SQLite** et **PostgreSQL** en parallèle.
+Ce projet combine un scraper Scrapy pour [books.toscrape.com](http://books.toscrape.com/) et une API RESTful FastAPI pour accéder aux données collectées.
 
----
+## 📋 Fonctionnalités
+
+- **Scraping** : Extraction des données de livres depuis books.toscrape.com
+- **Stockage** : Sauvegarde dans une base de données SQLite
+- **API REST** : Interface pour accéder aux données via des endpoints HTTP
+- **Recherche** : Recherche de livres par titre, catégorie, prix, etc.
+- **Statistiques** : Métriques sur la collection de livres
+
+## 🚀 Installation
+
+1. **Cloner le dépôt**
+   ```bash
+   git clone [URL_DU_REPO]
+   cd Scrapy_Books
+   ```
+
+2. **Créer un environnement virtuel**
+   ```bash
+   python -m venv env
+   env\Scripts\activate  # Sur Windows
+   source env/bin/activate  # Sur macOS/Linux
+   ```
+
+3. **Installer les dépendances**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## 🕷️ Utilisation du Scraper
+
+1. **Lancer le scraper**
+   ```bash
+   cd monprojet
+   scrapy crawl books
+   ```
+   
+   Les données seront sauvegardées dans `monprojet/books.db`
+
+## 🌐 Utilisation de l'API
+
+1. **Démarrer le serveur API**
+   ```bash
+   cd books_api
+   uvicorn app.main:app --reload --port 8000
+   ```
+
+2. **Accéder à la documentation**
+   - Documentation interactive: http://localhost:8000/docs
+   - Documentation alternative: http://localhost:8000/redoc
 
 ## 📂 Structure du projet
 
-monprojet/
+```
+Scrapy_Books/
 │
-├── spiders/
-│ └── scrapybooks.py # Spider principal
+├── monprojet/                  # Projet Scrapy
+│   ├── spiders/
+│   │   └── scrapybooks.py      # Spider principal
+│   ├── items.py                # Définition des items
+│   ├── itemloaders.py          # Loaders et nettoyages
+│   ├── pipelines.py            # Pipelines de traitement
+│   ├── settings.py             # Configuration Scrapy
+│   └── books.db                # Base de données SQLite (générée)
 │
-├── items.py # Définition des items
-├── itemloaders.py # Loaders et nettoyages
-├── pipelines.py # Pipelines SQLite et PostgreSQL
-├── middlewares.py # Middleware avec User-Agent
-├── settings.py # Paramètres Scrapy
-├── books.db # Base SQLite (après le premier run)
-├── .env # Variables d'environnement
-└── scrapy.cfg
+├── books_api/                  # API FastAPI
+│   ├── app/
+│   │   ├── core/              # Configuration
+│   │   ├── data/              # Accès aux données
+│   │   ├── domain/            # Logique métier
+│   │   └── presentation/      # Routes et schémas
+│   └── requirements.txt        # Dépendances de l'API
+│
+├── requirements-unified.txt    # Toutes les dépendances
+└── README.md                  # Ce fichier
+```
 
+## 📚 Endpoints de l'API
 
-## ⚙️ Installation
+- `GET /books/` - Liste tous les livres
+- `GET /books/{book_id}` - Détails d'un livre spécifique
+- `GET /books/search/title/{title}` - Recherche de livres par titre
+- `GET /books/search/category/{category}` - Recherche par catégorie
+- `GET /books/stats/summary` - Statistiques sur la collection
 
-1. Clone le projet :
+## Configuration
 
-```bash
-git clone <repo_url>
-cd monprojet
-
-
-2. Crée et active un environnement virtuel (optionnel mais recommandé) :
-python -m venv venv
-source venv/bin/activate   # Linux/Mac
-venv\Scripts\activate      # Windows
-
-
-3. Installe les dépendances :
-
-pip install -r requirements.txt
-
-
-4.  ⚙️ Configuration du fichier `.env`
-
-Crée un fichier `.env` à la racine du projet et ajoute tes informations de base de données comme suit :
+Créez un fichier `.env` à la racine du projet avec les variables nécessaires :
 
 ```env
-# Chemin vers la base SQLite
-SQLITE_PATH=  chemin complet vers ta base SQLite.
-# Informations PostgreSQL
-PG_DB= nom de la base PostgreSQL.
-PG_USER= utilisateur PostgreSQL.
-PG_PASSWORD= mot de passe PostgreSQL.
-PG_HOST= hôte PostgreSQL (souvent localhost).
-PG_PORT= port PostgreSQL (par défaut 5432).
+# Configuration de la base de données
+DB_TYPE=sqlite
+SQLITE_PATH=./monprojet/books.db
 
+# Pour PostgreSQL (optionnel)
+# PG_DB=books_db
+# PG_USER=postgres
+# PG_PASSWORD=votre_mot_de_passe
+# PG_HOST=localhost
+# PG_PORT=5432
+```
 
+## Exécution
 
+1. **Lancer le scraper**
+   ```bash
+   cd monprojet
+   scrapy crawl books
+   ```
 
-## 🏃 Lancer le spider
-scrapy crawl scrapybooks
+2. **Démarrer l'API**
+   ```bash
+   cd books_api
+   uvicorn app.main:app --reload --port 8000
+   ```
 
-Les données seront ajoutées dans SQLite (books.db) et dans PostgreSQL (books_db).
-Les doublons sur l’URL sont ignorés.
-Si le stock est introuvable, la valeur est -1 et un warning est affiché dans les logs.
+## Vérification des données
 
-
-## 🔧 Vérification des bases
-
-SQLite:
-
-sqlite3 books.db
+### SQLite
+```bash
+sqlite3 monprojet/books.db
 sqlite> SELECT COUNT(*) FROM books;
 sqlite> SELECT * FROM books LIMIT 5;
+```
 
+### Via l'API
+- Accédez à la documentation interactive : http://localhost:8000/docs
+- Ou consultez directement : http://localhost:8000/books/
 
-PostgreSQL:
+## Notes techniques
 
--- Connecte-toi à la base
-\c books_db
-SELECT COUNT(*) FROM books;
-SELECT * FROM books LIMIT 5;
-
-
-⚡ Notes
-
-User-Agent géré via middleware pour rotation ou randomisation.
-Stock : si absent, devient -1 dans les bases.
-Pagination automatique.
-Pipelines SQLite et PostgreSQL en parallèle.
+- Les doublons sont automatiquement ignorés (basé sur l'URL)
+- Le middleware gère automatiquement les User-Agents
+- La pagination est gérée automatiquement par le spider

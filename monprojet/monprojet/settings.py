@@ -20,7 +20,7 @@ ITEM_PIPELINES = {
     'monprojet.pipelines.CleanPipeline': 300,
     'monprojet.pipelines.DuplicatesLoggerPipeline': 400,
     'monprojet.pipelines.SQLitePipeline': 800,
-    'monprojet.pipelines.PostgresPipeline': 900,
+    
 }
 
 

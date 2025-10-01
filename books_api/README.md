@@ -1,56 +1,97 @@
-# Books API
+# 📚 Books API
 
-Cette API permet d'accéder aux données des livres extraites par le projet Scrapy.
+API RESTful pour accéder aux données des livres extraites par le projet Scrapy. Cette API est optimisée pour fonctionner avec une base de données SQLite existante.
 
-## Configuration requise
+## 🚀 Fonctionnalités
 
-- Python 3.7 ou supérieur
-- Base de données SQLite (books.db) située dans le dossier `monprojet`
+- Accès aux données des livres via une API REST
+- Recherche par titre et par catégorie
+- Statistiques sur le catalogue de livres
+- Documentation interactive (Swagger UI et ReDoc)
+- Compatible avec la base de données SQLite existante
 
-## Installation
+## 📋 Prérequis
 
-1. Créez un environnement virtuel (recommandé) :
+- Python 3.8 ou supérieur
+- Base de données SQLite (`monprojet/books.db`)
+- Gestionnaire de paquets pip
+
+## 🛠️ Installation
+
+1. **Cloner le dépôt** (si ce n'est pas déjà fait)
    ```bash
-   python -m venv venv
-   .\venv\Scripts\activate  # Sur Windows
-   source venv/bin/activate  # Sur macOS/Linux
+   git clone [URL_DU_REPO]
+   cd books_api
    ```
 
-2. Installez les dépendances :
+2. **Créer un environnement virtuel** (recommandé)
+   ```bash
+   # Sur Windows
+   python -m venv venv
+   .\venv\Scripts\activate
+
+   # Sur macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Installer les dépendances**
    ```bash
    pip install -r requirements.txt
    ```
 
-## Configuration
+## ⚙️ Configuration
 
-L'API est déjà configurée pour utiliser la base de données SQLite située dans `monprojet/books.db`.
+L'API est configurée pour utiliser automatiquement la base de données SQLite située dans :
+```
+monprojet/books.db
+```
 
-## Démarrage de l'API
+## 🚀 Lancement
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-L'API sera accessible à l'adresse : http://127.0.0.1:8000
+L'API sera accessible à : http://127.0.0.1:8000
 
-## Documentation de l'API
+## 📚 Documentation de l'API
 
-Une fois l'API démarrée, vous pouvez accéder à la documentation interactive :
-- Swagger UI : http://127.0.0.1:8000/docs
-- ReDoc : http://127.0.0.1:8000/redoc
+Une fois l'API démarrée, accédez à la documentation :
 
-## Endpoints disponibles
+- **Swagger UI** (interactif) : http://127.0.0.1:8000/docs
+- **ReDoc** (documentation) : http://127.0.0.1:8000/redoc
 
+## 🔍 Endpoints disponibles
+
+### Livres
 - `GET /books/` - Liste tous les livres
-- `GET /books/{book_id}` - Récupère un livre par son ID
-- `GET /books/search/title/{title}` - Recherche des livres par titre
-- `GET /books/category/{category}` - Recherche des livres par catégorie
-- `GET /books/stats/` - Affiche des statistiques sur les livres
+- `GET /books/{book_id}` - Détails d'un livre spécifique
 
-## Tests
+### Recherche
+- `GET /books/search/title/{title}` - Recherche par titre
+- `GET /books/category/{category}` - Recherche par catégorie
 
-Pour exécuter les tests :
+### Statistiques
+- `GET /books/stats/` - Statistiques sur le catalogue
+
+## 🧪 Tests
+
+Pour lancer les tests :
 
 ```bash
 pytest
 ```
+
+## 📦 Dépendances principales
+
+- **FastAPI** - Framework web moderne et rapide
+- **SQLite3** - Base de données embarquée
+- **Pydantic** - Validation des données
+- **Uvicorn** - Serveur ASGI
+
+## 📝 Notes
+
+- L'API est configurée pour fonctionner avec la base de données SQLite existante
+- Aucune configuration supplémentaire n'est nécessaire pour une utilisation locale
+- Pour le développement, le mode `--reload` permet un rechargement automatique lors des modifications

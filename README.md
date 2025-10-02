@@ -1,36 +1,27 @@
-# Projet Scrapy Books avec API
+#  Scraper de Livres avec API
 
-Ce projet combine un scraper Scrapy pour [books.toscrape.com](http://books.toscrape.com/) et une API RESTful FastAPI pour accéder aux données collectées.
+##  Installation
 
-## 📋 Fonctionnalités
+1. **Prérequis**
+   - Python 3.7+
+   - pip
 
-- **Scraping** : Extraction des données de livres depuis books.toscrape.com
-- **Stockage** : Sauvegarde dans une base de données SQLite
-- **API REST** : Interface pour accéder aux données via des endpoints HTTP
-- **Recherche** : Recherche de livres par titre, catégorie, prix, etc.
-- **Statistiques** : Métriques sur la collection de livres
-
-## 🚀 Installation
-
-1. **Cloner le dépôt**
+2. **Configuration**
    ```bash
+   # Cloner le projet
    git clone [URL_DU_REPO]
    cd Scrapy_Books
-   ```
 
-2. **Créer un environnement virtuel**
-   ```bash
-   python -m venv env
-   env\Scripts\activate  # Sur Windows
-   source env/bin/activate  # Sur macOS/Linux
-   ```
+   # Créer et activer l'environnement
+   python -m venv venv
+   .\venv\Scripts\activate  # Windows
+   # source venv/bin/activate  # macOS/Linux
 
-3. **Installer les dépendances**
-   ```bash
+   # Installer les dépendances
    pip install -r requirements.txt
    ```
 
-## 🕷️ Utilisation du Scraper
+##  Utilisation
 
 1. **Lancer le scraper**
    ```bash
@@ -38,21 +29,20 @@ Ce projet combine un scraper Scrapy pour [books.toscrape.com](http://books.toscr
    scrapy crawl books
    ```
    
-   Les données seront sauvegardées dans `monprojet/books.db`
+   Les données seront enregistrées dans : `monprojet/books.db`
 
-## 🌐 Utilisation de l'API
-
-1. **Démarrer le serveur API**
+2. **Démarrer l'API**
    ```bash
    cd books_api
-   uvicorn app.main:app --reload --port 8000
+   uvicorn presentation.main:app --reload --port 8000
    ```
 
-2. **Accéder à la documentation**
-   - Documentation interactive: http://localhost:8000/docs
-   - Documentation alternative: http://localhost:8000/redoc
+3. **Accéder à l'API**
+   - Documentation interactive : http://localhost:8000/docs
+   - Documentation alternative : http://localhost:8000/redoc
+   - Données brutes : http://localhost:8000/books/
 
-## 📂 Structure du projet
+##  Structure du Projet
 
 ```
 Scrapy_Books/
@@ -67,71 +57,59 @@ Scrapy_Books/
 │   └── books.db                # Base de données SQLite (générée)
 │
 ├── books_api/                  # API FastAPI
-│   ├── app/
-│   │   ├── core/              # Configuration
-│   │   ├── data/              # Accès aux données
-│   │   ├── domain/            # Logique métier
-│   │   └── presentation/      # Routes et schémas
-│   └── requirements.txt        # Dépendances de l'API
+│   ├── data/                   # Accès aux données
+│   │   ├── book_repository.py  # Opérations CRUD
+│   │   └── sqlite.py           # Configuration SQLite
+│   ├── domain/                 # Logique métier
+   │   ├── book.py             # Modèle de données
+   │   └── book_usecases.py    # Cas d'utilisation
+   └── presentation/           # Couche API
+       ├── main.py             # Configuration FastAPI
+       └── routes.py           # Définition des routes
 │
-├── requirements-unified.txt    # Toutes les dépendances
-└── README.md                  # Ce fichier
+├── requirements.txt           # Dépendances du projet
+└── README.md                 # Ce fichier
 ```
 
-## 📚 Endpoints de l'API
+##  Configuration
 
-- `GET /books/` - Liste tous les livres
-- `GET /books/{book_id}` - Détails d'un livre spécifique
-- `GET /books/search/title/{title}` - Recherche de livres par titre
-- `GET /books/search/category/{category}` - Recherche par catégorie
-- `GET /books/stats/summary` - Statistiques sur la collection
-
-## Configuration
-
-Créez un fichier `.env` à la racine du projet avec les variables nécessaires :
+Créez un fichier `.env` à la racine :
 
 ```env
-# Configuration de la base de données
+# Base de données
 DB_TYPE=sqlite
 SQLITE_PATH=./monprojet/books.db
 
-# Pour PostgreSQL (optionnel)
-# PG_DB=books_db
-# PG_USER=postgres
-# PG_PASSWORD=votre_mot_de_passe
-# PG_HOST=localhost
-# PG_PORT=5432
+# Serveur API
+API_HOST=0.0.0.0
+API_PORT=8000
+DEBUG=True
 ```
 
-## Exécution
+##  Endpoints API
 
-1. **Lancer le scraper**
-   ```bash
-   cd monprojet
-   scrapy crawl books
-   ```
+### Livres
+- `GET /api/v1/books` - Liste paginée des livres
+- `GET /api/v1/books/{book_id}` - Détails d'un livre
+- `GET /api/v1/books/search/?q=terme` - Recherche de livres
 
-2. **Démarrer l'API**
-   ```bash
-   cd books_api
-   uvicorn app.main:app --reload --port 8000
-   ```
+### Statistiques
+- `GET /api/v1/stats` - Statistiques sur la collection
+- `GET /health` - Vérification de l'état de l'API
 
-## Vérification des données
+##  Exemples de Requêtes
 
-### SQLite
-```bash
-sqlite3 monprojet/books.db
-sqlite> SELECT COUNT(*) FROM books;
-sqlite> SELECT * FROM books LIMIT 5;
+### Liste des livres
+```http
+GET /api/v1/books?skip=0&limit=10
 ```
 
-### Via l'API
-- Accédez à la documentation interactive : http://localhost:8000/docs
-- Ou consultez directement : http://localhost:8000/books/
+### Rechercher un livre
+```http
+GET /api/v1/books/search/?q=python
+```
 
-## Notes techniques
-
-- Les doublons sont automatiquement ignorés (basé sur l'URL)
-- Le middleware gère automatiquement les User-Agents
-- La pagination est gérée automatiquement par le spider
+##  Notes
+- Les données sont stockées dans une base SQLite locale
+- Le scraper peut être relancé pour mettre à jour les données
+- L'API se recharge automatiquement pendant le développement

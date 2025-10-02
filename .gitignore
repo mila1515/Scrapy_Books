@@ -1,14 +1,34 @@
-
 # --- Fichiers Python ---
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyd
+*.pyo
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # --- Environnements virtuels ---
 venv/
 .env/
 .venv/
-env 
+env/
+ENV/
 env.bak/
 
 # --- Fichiers systèmes ---
@@ -25,19 +45,27 @@ Thumbs.db
 *.json
 *.xml
 
-# --- Config perso ---
-.idea/
-.vscode/
+# --- Base de données ---
+*.db
 *.sqlite3
-
-# --- Fichiers de test ---; h
-.history
-coverage
-.tox
-.env 
-.csv
-.history
-
-books.db  
+books.db
 .books.db
-*.sqlite3
+
+# --- IDE et éditeurs ---
+.idea/
+vscode/
+.history/
+
+# --- Tests et couverture ---
+.coverage
+htmlcov/
+.tox/
+
+# --- Fichiers de configuration ---
+.env
+*.env
+
+# --- Autres ---
+coverage/
+*.bak
+*~

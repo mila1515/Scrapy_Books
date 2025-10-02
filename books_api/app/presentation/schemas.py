@@ -1,7 +1,6 @@
-from pydantic import BaseModel, Field, HttpUrl, validator, constr
-from typing import Optional, List, Dict, Any, Union
+from pydantic import BaseModel, Field, HttpUrl, constr
+from typing import Optional, List, Dict, Any
 from datetime import datetime
-import re
 
 class BookBase(BaseModel):
     """
@@ -49,46 +48,8 @@ class BookBase(BaseModel):
         example="https://example.com/le-petit-prince"
     )
     
-    # Validation personnalisée pour le titre
-    @validator('title')
-    def validate_title(cls, v):
-        # Supprimer les espaces superflus
-        v = ' '.join(v.strip().split())
-        
-        # Vérifier que le titre contient des caractères alphanumériques
-        if not any(c.isalnum() for c in v):
-            raise ValueError("Le titre doit contenir au moins un caractère alphanumérique")
-            
-        return v
-    
-    # Validation personnalisée pour le prix
-    @validator('price')
-    def validate_price(cls, v):
-        # Arrondir à 2 décimales
-        return round(v, 2)
-    
-    # Validation personnalisée pour la note
-    @validator('rating')
-    def validate_rating(cls, v):
-        if v is not None:
-            # Arrondir à 0.5 près (4.3 -> 4.5, 4.2 -> 4.0)
-            return round(v * 2) / 2
-        return v
-    
-    # Validation personnalisée pour l'URL
-    @validator('url', pre=True)
-    def validate_url(cls, v):
-        if v is None or v == '':
-            return None
-        return v
 
 
-class BookCreate(BookBase):
-    """
-    Schéma pour la création d'un nouveau livre.
-    Hérite de tous les champs de BookBase.
-    """
-    pass
 
 
 class BookUpdate(BaseModel):
@@ -138,37 +99,6 @@ class BookUpdate(BaseModel):
         example="https://example.com/le-petit-prince-special"
     )
     
-    # Définir les validateurs directement dans la classe
-    @validator('title')
-    def validate_title(cls, v):
-        if v is not None:
-            # Supprimer les espaces superflus
-            v = ' '.join(v.strip().split())
-            
-            # Vérifier que le titre contient des caractères alphanumériques
-            if not any(c.isalnum() for c in v):
-                raise ValueError("Le titre doit contenir au moins un caractère alphanumérique")
-        return v
-    
-    @validator('price')
-    def validate_price(cls, v):
-        if v is not None:
-            # Arrondir à 2 décimales
-            return round(v, 2)
-        return v
-    
-    @validator('rating')
-    def validate_rating(cls, v):
-        if v is not None:
-            # Arrondir à 0.5 près (4.3 -> 4.5, 4.2 -> 4.0)
-            return round(v * 2) / 2
-        return v
-    
-    @validator('url', pre=True)
-    def validate_url(cls, v):
-        if v is None or v == '':
-            return None
-        return v
 
 
 class BookSchema(BookBase):

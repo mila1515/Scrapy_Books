@@ -1,85 +1,69 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.openapi.utils import get_openapi
-from fastapi.staticfiles import StaticFiles
+"""
+Point d'entrée principal de l'API FastAPI.
 
-from app.presentation.routes import books
-from app.data.config.config import SQLITE_PATH
+Ce module configure et initialise l'application FastAPI avec :
+- Configuration CORS pour le développement
+- Documentation interactive (Swagger et ReDoc)
+- Gestion des erreurs
+- Routes d'API
+"""
+
 import os
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 import logging
-import sys
 
-# Configuration du logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('app.log', mode='a', encoding='utf-8')
-    ]
-)
+# Configuration du logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Définir le niveau de log pour sqlite3
-logging.getLogger('sqlite3').setLevel(logging.DEBUG)
+# Import des routeurs
+from app.presentation.books_routes import router as books_router
+from app.presentation.auth_routes import router as auth_router
+from app.presentation.analytics_routes import router as analytics_router
 
 # Création de l'application FastAPI
 app = FastAPI(
-    title="Books API",
-    description="""
-    API pour accéder aux données des livres extraites par le projet Scrapy.
-    
-    Cette API permet de :
-    - Lister tous les livres
-    - Rechercher des livres par titre ou catégorie
-    - Obtenir des statistiques sur les livres
-    """,
-    version="1.0.0"
+    title="API de Gestion de Livres",
+    description="API pour accéder aux données des livres scrapés",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# Configuration CORS
+# Configuration CORS (à restreindre en production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # À restreindre en production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Inclure les routes
-app.include_router(books.router, prefix="/api")
+# Inclusion des routeurs
+app.include_router(books_router)
+app.include_router(auth_router)
+app.include_router(analytics_router)
 
-# Gestion des erreurs globales
+# Route de test
+@app.get("/")
+async def root():
+    """Route de test pour vérifier que l'API fonctionne."""
+    return {
+        "message": "API de gestion de livres en cours d'exécution",
+        "documentation": "/docs ou /redoc"
+    }
+
+# Gestionnaire d'erreurs global
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"Erreur non gérée: {exc}")
+async def global_exception_handler(request, exc):
+    logger.error(f"Erreur non gérée: {str(exc)}")
     return JSONResponse(
-        status_code=500,
-        content={"detail": "Une erreur interne est survenue"}
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Une erreur inattendue s'est produite"}
     )
 
-# Route de santé
-@app.get("/health", tags=["santé"])
-async def health_check():
-    return {"status": "ok", "message": "API en cours d'exécution"}
-
-# Vérification de la base de données au démarrage
-@app.on_event("startup")
-async def startup_event():
-    logging.info("Démarrage de l'API Books...")
-    if os.path.exists(SQLITE_PATH):
-        logging.info(f"Base de données trouvée : {SQLITE_PATH}")
-    else:
-        logging.warning(f"Base de données introuvable : {SQLITE_PATH}")
-
-# Configuration pour le redémarrage automatique en développement
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

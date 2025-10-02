@@ -1,103 +1,143 @@
-#  Scraper de Livres avec API
+# API de Gestion de Bibliothèque avec FastAPI
 
-##  Installation
+## 📋 Prérequis
 
-1. **Prérequis**
-   - Python 3.7+
-   - pip
+- Python 3.8+
+- pip (gestionnaire de paquets Python)
+- Un terminal ou invite de commande
 
-2. **Configuration**
+## 🚀 Installation
+
+1. **Cloner le dépôt**
    ```bash
-   # Cloner le projet
    git clone [URL_DU_REPO]
    cd Scrapy_Books
+   ```
 
-   # Créer et activer l'environnement
+2. **Créer et activer un environnement virtuel**
+   ```bash
+   # Windows
    python -m venv venv
-   .\venv\Scripts\activate  # Windows
-   # source venv/bin/activate  # macOS/Linux
+   .\venv\Scripts\activate
+   
+   # macOS/Linux
+   # python3 -m venv venv
+   # source venv/bin/activate
+   ```
 
-   # Installer les dépendances
+3. **Installer les dépendances**
+   ```bash
    pip install -r requirements.txt
    ```
 
-##  Utilisation
+## 🏃‍♂️ Démarrer l'API
 
-1. **Lancer le scraper**
-   ```bash
-   cd monprojet
-   scrapy crawl books
-   ```
-   
-   Les données seront enregistrées dans : `monprojet/books.db`
+```bash
+# Depuis la racine du projet
+uvicorn books_api.presentation.main:app --reload
+```
 
-2. **Démarrer l'API**
-   ```bash
-   cd books_api
-   uvicorn presentation.main:app --reload --port 8000
-   ```
+## 🔍 Accès à l'API
 
-3. **Accéder à l'API**
-   - Documentation interactive : http://localhost:8000/docs
-   - Documentation alternative : http://localhost:8000/redoc
-   - Données brutes : http://localhost:8000/books/
+- **Documentation interactive (Swagger UI)**: http://127.0.0.1:8000/docs
+- **Documentation alternative (ReDoc)**: http://127.0.0.1:8000/redoc
+- **Vérification de l'état**: http://127.0.0.1:8000/health
 
-##  Structure du Projet
+## 🔐 Authentification
+
+L'API utilise l'authentification HTTP Basic. Utilisez ces identifiants par défaut :
+- **Utilisateur** : `admin`
+- **Mot de passe** : `admin123`
+
+## 📚 Endpoints de l'API
+
+### 📖 Gestion des Livres
+- `GET /api/v1/books` - Liste paginée des livres
+- `GET /api/v1/books/{book_id}` - Détails d'un livre spécifique
+- `GET /api/v1/books/search/?q=terme` - Recherche de livres par titre ou catégorie
+
+### 📊 Statistiques
+- `GET /api/v1/stats` - Statistiques sur la collection de livres
+
+### 🩺 Santé de l'API
+- `GET /health` - Vérifie que l'API est opérationnelle
+
+## 🏗️ Structure du Projet
 
 ```
 Scrapy_Books/
 │
-├── monprojet/                  # Projet Scrapy
-│   ├── spiders/
-│   │   └── scrapybooks.py      # Spider principal
-│   ├── items.py                # Définition des items
-│   ├── itemloaders.py          # Loaders et nettoyages
-│   ├── pipelines.py            # Pipelines de traitement
-│   ├── settings.py             # Configuration Scrapy
-│   └── books.db                # Base de données SQLite (générée)
-│
 ├── books_api/                  # API FastAPI
-│   ├── data/                   # Accès aux données
-│   │   ├── book_repository.py  # Opérations CRUD
-│   │   └── sqlite.py           # Configuration SQLite
+│   ├── data/                   # Couche d'accès aux données
+│   │   ├── book_repository.py  # Opérations CRUD sur les livres
+│   │   ├── sqlite.py           # Configuration SQLite
+│   │   └── config.py           # Configuration de l'application
+│   │
 │   ├── domain/                 # Logique métier
-   │   ├── book.py             # Modèle de données
-   │   └── book_usecases.py    # Cas d'utilisation
-   └── presentation/           # Couche API
-       ├── main.py             # Configuration FastAPI
-       └── routes.py           # Définition des routes
+│   │   ├── book.py            # Modèle de domaine Livre
+│   │   ├── user.py            # Modèle de domaine Utilisateur
+│   │   └── book_usecases.py   # Cas d'utilisation métier
+│   │
+│   └── presentation/          # Couche présentation (API)
+│       ├── main.py            # Point d'entrée FastAPI
+│       ├── routes.py          # Définition des routes API
+│       └── auth.py            # Gestion de l'authentification
 │
-├── requirements.txt           # Dépendances du projet
-└── README.md                 # Ce fichier
+├── .env.example              # Exemple de fichier de configuration
+├── requirements.txt          # Dépendances du projet
+└── README.md                # Ce fichier
 ```
 
-##  Configuration
+## ⚙️ Configuration
 
-Créez un fichier `.env` à la racine :
+Créez un fichier `.env` à la racine du projet en vous basant sur `.env.example` :
 
 ```env
-# Base de données
-DB_TYPE=sqlite
-SQLITE_PATH=./monprojet/books.db
+# Configuration de la base de données
+DATABASE_URL=sqlite:///./data/books.db
+DB_TIMEOUT=30
+DB_ISOLATION_LEVEL=None
 
-# Serveur API
+# Configuration du serveur
 API_HOST=0.0.0.0
 API_PORT=8000
 DEBUG=True
+
+# Authentification
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
 ```
 
-##  Endpoints API
+## 🧪 Exécution des tests
 
-### Livres
-- `GET /api/v1/books` - Liste paginée des livres
-- `GET /api/v1/books/{book_id}` - Détails d'un livre
-- `GET /api/v1/books/search/?q=terme` - Recherche de livres
+```bash
+# Exécuter tous les tests
+pytest
+```
 
-### Statistiques
-- `GET /api/v1/stats` - Statistiques sur la collection
-- `GET /health` - Vérification de l'état de l'API
+## 🛠️ Développement
 
-##  Exemples de Requêtes
+### Formattage du code
+```bash
+# Formater avec Black
+black .
+
+# Trier les imports avec isort
+isort .
+```
+
+### Vérifications de qualité
+```bash
+# Vérifier les erreurs de style
+flake8
+
+# Vérifier la couverture des tests
+pytest --cov=books_api tests/
+```
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 ### Liste des livres
 ```http

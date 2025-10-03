@@ -5,7 +5,8 @@ import logging
 from books_api.domain.book import Book
 from books_api.domain.book_usecases import BookUseCases
 from books_api.data.book_repository import BookRepository
-from books_api.domain.user import User, verify_credentials
+from books_api.domain.user import User
+from .auth import get_current_active_user
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def get_book_usecases():
                  500: {"description": "Erreur serveur lors de la récupération des livres"}
              })
 async def list_books(
-    user: User = Depends(verify_credentials),
+    user: User = Depends(get_current_active_user),
     skip: int = 0, 
     limit: int = 100,
     use_cases: BookUseCases = Depends(get_book_usecases)
@@ -53,7 +54,7 @@ async def list_books(
 async def get_book(
     book_id: int,
     use_cases: BookUseCases = Depends(get_book_usecases),
-    user: User = Depends(verify_credentials)
+    user: User = Depends(get_current_active_user)
 ):
     """
     Récupère les détails d'un livre par son ID.
@@ -87,7 +88,7 @@ async def get_book(
 async def search_books(
     q: str = Query(..., min_length=2, description="Terme de recherche"),
     use_cases: BookUseCases = Depends(get_book_usecases),
-    user: User = Depends(verify_credentials)
+    user: User = Depends(get_current_active_user)
 ):
     """
     Recherche des livres par titre ou catégorie.
@@ -112,7 +113,7 @@ async def search_books(
              })
 async def get_all_tags(
     use_cases: BookUseCases = Depends(get_book_usecases),
-    user: User = Depends(verify_credentials)
+    user: User = Depends(get_current_active_user)
 ):
     """
     Récupère la liste de tous les tags disponibles avec leur nombre d'occurrences.
@@ -142,7 +143,7 @@ async def get_books_by_tag(
     skip: int = Query(0, ge=0, description="Nombre d'éléments à sauter"),
     limit: int = Query(100, ge=1, le=1000, description="Nombre maximum d'éléments à retourner"),
     use_cases: BookUseCases = Depends(get_book_usecases),
-    user: User = Depends(verify_credentials)
+    user: User = Depends(get_current_active_user)
 ):
     """
     Recherche des livres par tag.
@@ -176,7 +177,7 @@ async def get_books_by_tag(
              })
 async def get_stats(
     use_cases: BookUseCases = Depends(get_book_usecases),
-    user: User = Depends(verify_credentials)
+    user: User = Depends(get_current_active_user)
 ):
     """
     Récupère des statistiques sur les livres.

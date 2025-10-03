@@ -106,7 +106,7 @@ Le projet inclut une suite complète de tests pour assurer la qualité et la fia
 ```bash
 # Depuis la racine du projet
 python -m pytest books_api/tests/ -v
-```
+``` 
 
 
 

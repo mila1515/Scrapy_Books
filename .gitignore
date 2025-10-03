@@ -72,6 +72,7 @@ venv/
 env/
 ENV/
 env.bak/
+venv.bak/
 
 # --- Fichiers systèmes ---
 .DS_Store

@@ -26,6 +26,36 @@ class BookRepository:
         logger.info(f"Initialisation du BookRepository avec la base de données: {self.db_path}")
         logger.info(f"URL de la base de données: {os.environ.get('DATABASE_URL')}")
         
+    def _row_to_book(self, row: Dict[str, Any]) -> 'Book':
+        """
+        Convertit une ligne de la base de données en objet Book.
+        
+        Args:
+            row: Dictionnaire contenant les données d'un livre.
+            
+        Returns:
+            Book: Un objet Book initialisé avec les données de la ligne.
+        """
+        from books_api.domain.book import Book
+        
+        # Extraire les tags si présents dans la ligne
+        tags = []
+        if 'tags' in row and row['tags']:
+            tags = row['tags'].split(',') if isinstance(row['tags'], str) else row['tags']
+        
+        # Créer et retourner un objet Book
+        return Book(
+            id=row.get('id'),
+            title=row.get('title', ''),
+            price=row.get('price', 0.0),
+            rating=row.get('rating'),
+            category=row.get('category'),
+            stock=row.get('stock', 0),
+            url=row.get('url', ''),
+            created_at=row.get('created_at'),
+            tags=tags
+        )
+        
     @contextmanager
     def _get_cursor(self) -> Any:
         """
@@ -106,13 +136,27 @@ class BookRepository:
         """
         
         try:
-            result = self._execute_query(query, (book_id,), fetch_all=False)
-            if not result:
-                return None
+            with self._get_cursor() as cursor:
+                cursor.execute(query, (book_id,))
+                row = cursor.fetchone()
                 
-            # Convertir le dictionnaire en objet Book
-            return Book(**result)
-            
+                if not row:
+                    return None
+                
+                # Convertir la ligne en dictionnaire
+                columns = [column[0] for column in cursor.description]
+                row_dict = dict(zip(columns, row))
+                
+                # Récupérer les tags pour ce livre
+                cursor.execute("""
+                    SELECT tag FROM book_tags WHERE book_id = ?
+                """, (book_id,))
+                tags = [tag[0] for tag in cursor.fetchall()]
+                row_dict['tags'] = tags
+                
+                # Créer et retourner l'objet Book
+                return self._row_to_book(row_dict)
+                
         except Exception as e:
             logger.error("Erreur lors de la récupération du livre ID %s: %s", book_id, str(e))
             raise DatabaseError(f"Impossible de récupérer le livre avec l'ID {book_id}: {e}") from e
@@ -249,8 +293,19 @@ class BookRepository:
         try:
             with self._get_cursor() as cursor:
                 cursor.execute(query_sql, (search_query, search_query))
-                results = cursor.fetchall()
-                return [self._row_to_book(row) for row in results]
+                columns = [column[0] for column in cursor.description]
+                results = []
+                for row in cursor.fetchall():
+                    # Convertir la ligne en dictionnaire
+                    row_dict = dict(zip(columns, row))
+                    # Récupérer les tags pour ce livre
+                    cursor.execute("""
+                        SELECT tag FROM book_tags WHERE book_id = ?
+                    """, (row_dict['id'],))
+                    tags = [tag[0] for tag in cursor.fetchall()]
+                    row_dict['tags'] = tags
+                    results.append(self._row_to_book(row_dict))
+                return results
         except Exception as e:
             logger.error(f"Erreur lors de la recherche de livres avec le terme '{query}': {e}")
             raise DatabaseError(f"Erreur lors de la recherche de livres: {e}") from e
@@ -281,8 +336,19 @@ class BookRepository:
         try:
             with self._get_cursor() as cursor:
                 cursor.execute(query, (tag, limit, skip))
-                results = cursor.fetchall()
-                return [self._row_to_book(row) for row in results]
+                columns = [column[0] for column in cursor.description]
+                results = []
+                for row in cursor.fetchall():
+                    # Convertir la ligne en dictionnaire
+                    row_dict = dict(zip(columns, row))
+                    # Récupérer les tags pour ce livre
+                    cursor.execute("""
+                        SELECT tag FROM book_tags WHERE book_id = ?
+                    """, (row_dict['id'],))
+                    tags = [tag[0] for tag in cursor.fetchall()]
+                    row_dict['tags'] = tags
+                    results.append(self._row_to_book(row_dict))
+                return results
         except Exception as e:
             logger.error(f"Erreur lors de la recherche de livres avec le tag '{tag}': {e}")
             raise DatabaseError(f"Erreur lors de la recherche par tag: {e}") from e

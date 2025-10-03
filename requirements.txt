@@ -1,15 +1,14 @@
 # Dépendances principales
-Python>=3.8,<3.13
 
 # Scrapy et dépendances
 Scrapy==2.11.0
-itemloaders==2.1.0
+itemloaders==1.3.2  # Version mise à jour pour la compatibilité
 itemadapter==0.8.0
 w3lib==2.1.2
 service-identity==23.1.0
-parsel==1.9.3
+parsel==1.10.0  # Version mise à jour pour la compatibilité
 pyOpenSSL==24.1.0
-cryptography==42.0.5
+cryptography==41.0.7  # Version compatible avec pyOpenSSL 24.1.0
 
 # API FastAPI
 fastapi==0.110.0

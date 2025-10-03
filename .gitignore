@@ -41,3 +41,8 @@ coverage
 books.db  
 .books.db
 *.sqlite3
+*.db
+books.db
+books.db-wal
+books.db-shm
+books.db-journal

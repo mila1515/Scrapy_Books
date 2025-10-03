@@ -1,0 +1,37 @@
+# Dépendances principales
+Python>=3.8,<3.13
+
+# Scrapy et dépendances
+Scrapy==2.11.0
+itemloaders==2.1.0
+itemadapter==0.8.0
+w3lib==2.1.2
+service-identity==23.1.0
+parsel==1.9.3
+pyOpenSSL==24.1.0
+cryptography==42.0.5
+
+# API FastAPI
+fastapi==0.110.0
+uvicorn==0.29.0
+sqlalchemy==2.0.28
+pydantic==2.6.4
+python-dotenv==1.0.1
+python-multipart==0.0.9
+
+# Authentification et sécurité
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.9
+
+# Base de données
+aiosqlite==0.20.0
+
+# Utilitaires
+loguru==0.7.2  # Pour une meilleure gestion des logs
+pytest==8.1.1  # Pour les tests
+black==24.3.0  # Pour le formatage de code
+isort==5.13.2  # Pour le tri des imports
+typing-extensions==4.11.0  # Pour le support des types
+pytest-asyncio==0.23.6  # Pour les tests asynchrones
+httpx==0.27.0  # Client HTTP asynchrone pour les tests

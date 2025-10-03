@@ -1,16 +1,29 @@
-# Projet Scrapy Books avec API
+# Scrapy Books - Outil de Scraping et API REST
 
-Ce projet combine un scraper Scrapy pour [books.toscrape.com](http://books.toscrape.com/) et une API RESTful FastAPI pour accéder aux données collectées.
+Un projet complet pour extraire des données de livres depuis le web et les exposer via une API RESTful sécurisée.
 
 ## 📋 Fonctionnalités
 
-- **Scraping** : Extraction des données de livres depuis books.toscrape.com
-- **Stockage** : Sauvegarde dans une base de données SQLite
-- **API REST** : Interface pour accéder aux données via des endpoints HTTP
-- **Recherche** : Recherche de livres par titre, catégorie, prix, etc.
-- **Statistiques** : Métriques sur la collection de livres
+### 🕷️ Module de Scraping
+- Extraction de données de livres depuis des sites web
+- Gestion des requêtes asynchrones
+- Nettoyage et traitement des données
+- Stockage dans une base de données SQLite
 
-## 🚀 Installation
+### 🌐 API REST
+- Documentation interactive (Swagger/ReDoc)
+- Authentification sécurisée
+- Gestion complète des livres (CRUD)
+- Recherche avancée par catégories, titres, etc.
+- Statistiques sur la collection de livres
+
+## 🚀 Prérequis
+
+- Python 3.8+
+- pip (gestionnaire de paquets Python)
+- Git (optionnel)
+
+## 🛠 Installation
 
 1. **Cloner le dépôt**
    ```bash
@@ -20,118 +33,117 @@ Ce projet combine un scraper Scrapy pour [books.toscrape.com](http://books.toscr
 
 2. **Créer un environnement virtuel**
    ```bash
-   python -m venv env
-   env\Scripts\activate  # Sur Windows
-   source env/bin/activate  # Sur macOS/Linux
+   python -m venv venv
    ```
 
-3. **Installer les dépendances**
+3. **Activer l'environnement virtuel**
+   - Windows : `.\venv\Scripts\activate`
+   - macOS/Linux : `source venv/bin/activate`
+
+4. **Installer les dépendances**
    ```bash
    pip install -r requirements.txt
    ```
 
+## ⚙ Configuration
+
+1. **Configurer l'environnement**
+   Créez un fichier `.env` dans le dossier `monprojet/` :
+   ```env
+   # Authentification API
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=votre_mot_de_passe_secure
+   
+   # Base de données
+   DATABASE_URL=sqlite:///monprojet/books.db
+   
+   # Configuration Scrapy (si nécessaire)
+   USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..."
+   ```
+
 ## 🕷️ Utilisation du Scraper
 
-1. **Lancer le scraper**
+1. **Lancer le spider**
    ```bash
    cd monprojet
-   scrapy crawl books
+   scrapy crawl nom_du_spider -o livres.json
    ```
-   
-   Les données seront sauvegardées dans `monprojet/books.db`
+
+   Options disponibles :
+   - `-o output.json` : Exporter les résultats
+   - `-s LOG_LEVEL=INFO` : Niveau de logs
+   - `-a param=valeur` : Passer des paramètres au spider
+
+2. **Exécuter les tests du scraper**
+   ```bash
+   cd monprojet
+   scrapy check
+   ```
 
 ## 🌐 Utilisation de l'API
 
-1. **Démarrer le serveur API**
+1. **Démarrer le serveur**
    ```bash
-   cd books_api
-   uvicorn app.main:app --reload --port 8000
+   python run.py
    ```
 
-2. **Accéder à la documentation**
-   - Documentation interactive: http://localhost:8000/docs
-   - Documentation alternative: http://localhost:8000/redoc
+2. **Accès à la documentation**
+   - Swagger UI : http://127.0.0.1:8000/docs
+   - ReDoc : http://127.0.0.1:8000/redoc
 
-## 📂 Structure du projet
+3. **Authentification**
+   ```
+   Utilisateur: admin
+   Mot de passe: [votre_mot_de_passe]
+   ```
+
+## 📚 Structure du Projet
 
 ```
 Scrapy_Books/
+├── books_api/                  # Code source de l'API
+│   ├── data/                   # Accès aux données
+│   │   ├── book_repository.py  # Gestion des opérations CRUD
+│   │   ├── config.py           # Configuration de l'application
+│   │   └── sqlite.py           # Gestion de la base de données
+│   │
+│   ├── domain/                 # Logique métier
+│   │   ├── book.py            # Modèle de données Livre
+│   │   ├── book_usecases.py   # Cas d'utilisation métier
+│   │   └── user.py            # Gestion des utilisateurs
+│   │
+│   └── presentation/          # Gestion des requêtes
+│       ├── auth.py            # Authentification
+│       ├── main.py            # Application FastAPI
+│       └── routes.py          # Définition des routes API
 │
-├── monprojet/                  # Projet Scrapy
-│   ├── spiders/
-│   │   └── scrapybooks.py      # Spider principal
-│   ├── items.py                # Définition des items
-│   ├── itemloaders.py          # Loaders et nettoyages
-│   ├── pipelines.py            # Pipelines de traitement
-│   ├── settings.py             # Configuration Scrapy
-│   └── books.db                # Base de données SQLite (générée)
+├── monprojet/                 # Projet Scrapy
+│   └── monprojet/
+│       ├── spiders/           # Spiders de scraping
+│       │   ├── __init__.py   # Fichier d'initialisation
+│       │   └── scrapybooks.py  # Spider principal pour le scraping de livres
+│       │
+│       ├── __init__.py
+│       ├── items.py          # Modèles de données Scrapy
+│       ├── middlewares.py    # Middlewares personnalisés
+│       ├── pipelines.py      # Traitement des données
+│       ├── settings.py       # Configuration Scrapy
+│       └── .env             # Configuration d'environnement
 │
-├── books_api/                  # API FastAPI
-│   ├── app/
-│   │   ├── core/              # Configuration
-│   │   ├── data/              # Accès aux données
-│   │   ├── domain/            # Logique métier
-│   │   └── presentation/      # Routes et schémas
-│   └── requirements.txt        # Dépendances de l'API
-│
-├── requirements-unified.txt    # Toutes les dépendances
-└── README.md                  # Ce fichier
+├── .gitignore
+├── requirements.txt         # Dépendances du projet
+└── run.py                   # Point d'entrée de l'application
 ```
 
-## 📚 Endpoints de l'API
+## 🧪 Tests
 
-- `GET /books/` - Liste tous les livres
-- `GET /books/{book_id}` - Détails d'un livre spécifique
-- `GET /books/search/title/{title}` - Recherche de livres par titre
-- `GET /books/search/category/{category}` - Recherche par catégorie
-- `GET /books/stats/summary` - Statistiques sur la collection
-
-## Configuration
-
-Créez un fichier `.env` à la racine du projet avec les variables nécessaires :
-
-```env
-# Configuration de la base de données
-DB_TYPE=sqlite
-SQLITE_PATH=./monprojet/books.db
-
-# Pour PostgreSQL (optionnel)
-# PG_DB=books_db
-# PG_USER=postgres
-# PG_PASSWORD=votre_mot_de_passe
-# PG_HOST=localhost
-# PG_PORT=5432
-```
-
-## Exécution
-
-1. **Lancer le scraper**
-   ```bash
-   cd monprojet
-   scrapy crawl books
-   ```
-
-2. **Démarrer l'API**
-   ```bash
-   cd books_api
-   uvicorn app.main:app --reload --port 8000
-   ```
-
-## Vérification des données
-
-### SQLite
+### Tester l'API
 ```bash
-sqlite3 monprojet/books.db
-sqlite> SELECT COUNT(*) FROM books;
-sqlite> SELECT * FROM books LIMIT 5;
+pytest books_api/tests/
 ```
 
-### Via l'API
-- Accédez à la documentation interactive : http://localhost:8000/docs
-- Ou consultez directement : http://localhost:8000/books/
-
-## Notes techniques
-
-- Les doublons sont automatiquement ignorés (basé sur l'URL)
-- Le middleware gère automatiquement les User-Agents
-- La pagination est gérée automatiquement par le spider
+### Tester les spiders
+```bash
+cd monprojet
+scrapy check
+```

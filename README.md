@@ -1,12 +1,29 @@
-# API de Gestion de Bibliothèque avec FastAPI
+# Scrapy Books - Outil de Scraping et API REST
 
-## 📋 Prérequis
+Un projet complet pour extraire des données de livres depuis le web et les exposer via une API RESTful sécurisée.
+
+## 📋 Fonctionnalités
+
+### 🕷️ Module de Scraping
+- Extraction de données de livres depuis des sites web
+- Gestion des requêtes asynchrones
+- Nettoyage et traitement des données
+- Stockage dans une base de données SQLite
+
+### 🌐 API REST
+- Documentation interactive (Swagger/ReDoc)
+- Authentification sécurisée
+- Gestion complète des livres (CRUD)
+- Recherche avancée par catégories, titres, etc.
+- Statistiques sur la collection de livres
+
+## 🚀 Prérequis
 
 - Python 3.8+
 - pip (gestionnaire de paquets Python)
-- Un terminal ou invite de commande
+- Git (optionnel)
 
-## 🚀 Installation
+## 🛠 Installation
 
 1. **Cloner le dépôt**
    ```bash
@@ -14,142 +31,119 @@
    cd Scrapy_Books
    ```
 
-2. **Créer et activer un environnement virtuel**
+2. **Créer un environnement virtuel**
    ```bash
-   # Windows
    python -m venv venv
-   .\venv\Scripts\activate
-   
-   # macOS/Linux
-   # python3 -m venv venv
-   # source venv/bin/activate
    ```
 
-3. **Installer les dépendances**
+3. **Activer l'environnement virtuel**
+   - Windows : `.\venv\Scripts\activate`
+   - macOS/Linux : `source venv/bin/activate`
+
+4. **Installer les dépendances**
    ```bash
    pip install -r requirements.txt
    ```
 
-## 🏃‍♂️ Démarrer l'API
+## ⚙ Configuration
 
-```bash
-# Depuis la racine du projet
-uvicorn books_api.presentation.main:app --reload
-```
+1. **Configurer l'environnement**
+   Créez un fichier `.env` dans le dossier `monprojet/` :
+   ```env
+   # Authentification API
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=votre_mot_de_passe_secure
+   
+   # Base de données
+   DATABASE_URL=sqlite:///monprojet/books.db
+   
+   # Configuration Scrapy (si nécessaire)
+   USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..."
+   ```
 
-## 🔍 Accès à l'API
+## 🕷️ Utilisation du Scraper
 
-- **Documentation interactive (Swagger UI)**: http://127.0.0.1:8000/docs
-- **Documentation alternative (ReDoc)**: http://127.0.0.1:8000/redoc
-- **Vérification de l'état**: http://127.0.0.1:8000/health
+1. **Lancer le spider**
+   ```bash
+   cd monprojet
+   scrapy crawl nom_du_spider -o livres.json
+   ```
 
-## 🔐 Authentification
+   Options disponibles :
+   - `-o output.json` : Exporter les résultats
+   - `-s LOG_LEVEL=INFO` : Niveau de logs
+   - `-a param=valeur` : Passer des paramètres au spider
 
-L'API utilise l'authentification HTTP Basic. Utilisez ces identifiants par défaut :
-- **Utilisateur** : `admin`
-- **Mot de passe** : `admin123`
+2. **Exécuter les tests du scraper**
+   ```bash
+   cd monprojet
+   scrapy check
+   ```
 
-## 📚 Endpoints de l'API
+## 🌐 Utilisation de l'API
 
-### 📖 Gestion des Livres
-- `GET /api/v1/books` - Liste paginée des livres
-- `GET /api/v1/books/{book_id}` - Détails d'un livre spécifique
-- `GET /api/v1/books/search/?q=terme` - Recherche de livres par titre ou catégorie
+1. **Démarrer le serveur**
+   ```bash
+   python run.py
+   ```
 
-### 📊 Statistiques
-- `GET /api/v1/stats` - Statistiques sur la collection de livres
+2. **Accès à la documentation**
+   - Swagger UI : http://127.0.0.1:8000/docs
+   - ReDoc : http://127.0.0.1:8000/redoc
 
-### 🩺 Santé de l'API
-- `GET /health` - Vérifie que l'API est opérationnelle
+3. **Authentification**
+   ```
+   Utilisateur: admin
+   Mot de passe: [votre_mot_de_passe]
+   ```
 
-## 🏗️ Structure du Projet
+## 📚 Structure du Projet
 
 ```
 Scrapy_Books/
-│
-├── books_api/                  # API FastAPI
-│   ├── data/                   # Couche d'accès aux données
-│   │   ├── book_repository.py  # Opérations CRUD sur les livres
-│   │   ├── sqlite.py           # Configuration SQLite
-│   │   └── config.py           # Configuration de l'application
+├── books_api/                  # Code source de l'API
+│   ├── data/                   # Accès aux données
+│   │   ├── book_repository.py  # Gestion des opérations CRUD
+│   │   ├── config.py           # Configuration de l'application
+│   │   └── sqlite.py           # Gestion de la base de données
 │   │
 │   ├── domain/                 # Logique métier
-│   │   ├── book.py            # Modèle de domaine Livre
-│   │   ├── user.py            # Modèle de domaine Utilisateur
-│   │   └── book_usecases.py   # Cas d'utilisation métier
+│   │   ├── book.py            # Modèle de données Livre
+│   │   ├── book_usecases.py   # Cas d'utilisation métier
+│   │   └── user.py            # Gestion des utilisateurs
 │   │
-│   └── presentation/          # Couche présentation (API)
-│       ├── main.py            # Point d'entrée FastAPI
-│       ├── routes.py          # Définition des routes API
-│       └── auth.py            # Gestion de l'authentification
+│   └── presentation/          # Gestion des requêtes
+│       ├── auth.py            # Authentification
+│       ├── main.py            # Application FastAPI
+│       └── routes.py          # Définition des routes API
 │
-├── .env.example              # Exemple de fichier de configuration
-├── requirements.txt          # Dépendances du projet
-└── README.md                # Ce fichier
+├── monprojet/                 # Projet Scrapy
+│   └── monprojet/
+│       ├── spiders/           # Spiders de scraping
+│       │   ├── __init__.py   # Fichier d'initialisation
+│       │   └── scrapybooks.py  # Spider principal pour le scraping de livres
+│       │
+│       ├── __init__.py
+│       ├── items.py          # Modèles de données Scrapy
+│       ├── middlewares.py    # Middlewares personnalisés
+│       ├── pipelines.py      # Traitement des données
+│       ├── settings.py       # Configuration Scrapy
+│       └── .env             # Configuration d'environnement
+│
+├── .gitignore
+├── requirements.txt         # Dépendances du projet
+└── run.py                   # Point d'entrée de l'application
 ```
 
-## ⚙️ Configuration
+## 🧪 Tests
 
-Créez un fichier `.env` à la racine du projet en vous basant sur `.env.example` :
-
-```env
-# Configuration de la base de données
-DATABASE_URL=sqlite:///./data/books.db
-DB_TIMEOUT=30
-DB_ISOLATION_LEVEL=None
-
-# Configuration du serveur
-API_HOST=0.0.0.0
-API_PORT=8000
-DEBUG=True
-
-# Authentification
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin123
-```
-
-## 🧪 Exécution des tests
-
+### Tester l'API
 ```bash
-# Exécuter tous les tests
-pytest
+pytest books_api/tests/
 ```
 
-## 🛠️ Développement
-
-### Formattage du code
+### Tester les spiders
 ```bash
-# Formater avec Black
-black .
-
-# Trier les imports avec isort
-isort .
+cd monprojet
+scrapy check
 ```
-
-### Vérifications de qualité
-```bash
-# Vérifier les erreurs de style
-flake8
-
-# Vérifier la couverture des tests
-pytest --cov=books_api tests/
-```
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-### Liste des livres
-```http
-GET /api/v1/books?skip=0&limit=10
-```
-
-### Rechercher un livre
-```http
-GET /api/v1/books/search/?q=python
-```
-
-##  Notes
-- Les données sont stockées dans une base SQLite locale
-- Le scraper peut être relancé pour mettre à jour les données
-- L'API se recharge automatiquement pendant le développement

@@ -25,24 +25,29 @@ class BookUseCases:
         self.repo = repo
         logger.info("BookUseCases initialisé avec le repository: %s", repr(repo))
 
-    def list_books(self) -> List[Book]:
+    def list_books(self, skip: int = 0, limit: int = 100) -> List[Book]:
         """
-        Récupère la liste de tous les livres.
+        Récupère une liste paginée de livres.
         
+        Args:
+            skip: Nombre d'éléments à sauter (pour la pagination).
+            limit: Nombre maximum d'éléments à retourner.
+            
         Returns:
-            List[Book]: Une liste de tous les livres disponibles.
+            List[Book]: Une liste de livres triés par date de création décroissante.
             
         Raises:
             DatabaseError: Si une erreur survient lors de la récupération des livres.
         """
         try:
-            logger.debug("Récupération de tous les livres")
-            books = self.repo.get_all_books()
-            logger.info("%d livres récupérés avec succès", len(books))
+            logger.debug("Récupération des livres (skip=%d, limit=%d)", skip, limit)
+            books = self.repo.get_all_books(skip=skip, limit=limit)
+            logger.info("%d livres récupérés avec succès (skip=%d, limit=%d)", len(books), skip, limit)
             return books
         except Exception as e:
-            logger.error("Erreur lors de la récupération de tous les livres: %s", str(e))
-            raise DatabaseError(f"Impossible de récupérer la liste des livres: {e}") from e
+            logger.error("Erreur lors de la récupération des livres (skip=%d, limit=%d): %s", 
+                        skip, limit, str(e))
+            raise DatabaseError(f"Erreur lors de la récupération des livres: {e}") from e
 
     def get_book_by_id(self, book_id: int) -> Optional[Book]:
         """
@@ -178,3 +183,50 @@ class BookUseCases:
         except Exception as e:
             logger.error("Erreur lors de la recherche de livres avec la requête '%s': %s", query, str(e))
             raise DatabaseError(f"Erreur lors de la recherche de livres avec la requête '{query}': {e}") from e
+            
+    def get_books_by_tag(self, tag: str, skip: int = 0, limit: int = 100) -> List[Book]:
+        """
+        Récupère les livres ayant un tag spécifique.
+        
+        Args:
+            tag: Le tag à rechercher (insensible à la casse).
+            skip: Nombre d'éléments à sauter (pour la pagination).
+            limit: Nombre maximum d'éléments à retourner.
+            
+        Returns:
+            List[Book]: Liste des livres ayant le tag spécifié.
+            
+        Raises:
+            DatabaseError: Si une erreur survient lors de la recherche.
+            ValueError: Si le tag est vide.
+        """
+        if not tag or not tag.strip():
+            raise ValueError("Le tag ne peut pas être vide")
+            
+        try:
+            logger.debug("Recherche de livres avec le tag: %s (skip=%d, limit=%d)", tag, skip, limit)
+            books = self.repo.get_books_by_tag(tag.strip(), skip=skip, limit=limit)
+            logger.info("%d livres trouvés avec le tag: %s", len(books), tag)
+            return books
+        except Exception as e:
+            logger.error("Erreur lors de la recherche de livres avec le tag '%s': %s", tag, str(e))
+            raise DatabaseError(f"Erreur lors de la recherche par tag: {e}") from e
+            
+    def get_all_tags(self) -> List[Dict[str, Any]]:
+        """
+        Récupère la liste de tous les tags uniques avec leur nombre d'occurrences.
+        
+        Returns:
+            List[Dict[str, Any]]: Liste des tags avec leur nombre d'occurrences.
+            
+        Raises:
+            DatabaseError: Si une erreur survient lors de la récupération des tags.
+        """
+        try:
+            logger.debug("Récupération de tous les tags")
+            tags = self.repo.get_all_tags()
+            logger.info("%d tags uniques trouvés", len(tags))
+            return tags
+        except Exception as e:
+            logger.error("Erreur lors de la récupération des tags: %s", str(e))
+            raise DatabaseError(f"Erreur lors de la récupération des tags: {e}") from e

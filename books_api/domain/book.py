@@ -9,19 +9,18 @@ logger = logging.getLogger(__name__)
 
 class ValidationError(ValueError):
     """Exception levée lorsqu'une validation échoue."""
-    pass
-
 class BookBase(BaseModel):
     """Modèle de base pour un livre."""
     id: int
     title: str
+    price: float
+    rating: Optional[int] = None
     category: Optional[str] = None
-    price: float = 0.0
-    stock: int = 0
+    stock: int = -1
     created_at: Optional[str] = None
-    rating: Optional[Union[int, float]] = None
-    url: Optional[str] = None
-
+    updated_at: Optional[str] = None
+    url: str
+    
     class Config:
         from_attributes = True
 
@@ -32,44 +31,38 @@ class Book(BookBase):
     Cette classe inclut des validations de données et des méthodes utilitaires
     pour manipuler les informations des livres.
     """
+    tags: List[str] = Field(default_factory=list)
     
-    def __init__(
-        self, 
-        id: int, 
-        title: str, 
-        price: float = 0.0, 
-        stock: int = 0, 
-        created_at: Optional[str] = None, 
-        rating: Optional[Union[int, float]] = None, 
-        url: Optional[str] = None
-    ) -> None:
+    def __init__(self, id: int, title: str, price: float, stock: int, 
+                 created_at: str, rating: Optional[float] = None,
+                 category: Optional[str] = None, url: Optional[str] = None, 
+                 tags: Optional[List[str]] = None, **kwargs):
         """
-        Initialise un nouveau livre avec validation des données.
+        Initialise une nouvelle instance de Book.
         
         Args:
             id: Identifiant unique du livre.
-            title: Titre du livre (obligatoire).
-            category: Catégorie du livre (optionnel).
-            price: Prix du livre (par défaut 0.0).
-            stock: Quantité en stock (par défaut 0).
-            created_at: Date de création au format ISO (optionnel).
-            rating: Note du livre entre 0 et 5 (optionnel).
-            url: URL de la page du livre (optionnel).
-            
-        Raises:
-            ValidationError: Si une des validations échoue.
+            title: Titre du livre.
+            price: Prix du livre.
+            stock: Quantité en stock.
+            created_at: Date de création au format ISO.
+            rating: Note du livre (optionnelle).
+            category: Catégorie du livre (optionnelle).
+            url: URL du livre (optionnelle).
+            tags: Liste des tags du livre (optionnelle).
         """
         # Appel au constructeur de la classe parente (BookBase)
         super().__init__(
             id=id,
             title=title,
-            category=category,
             price=price,
             stock=stock,
             created_at=created_at,
             rating=rating,
-            url=url
+            category=category,
+            url=url or ''
         )
+        self.tags = tags or []
         
         # Validation des données
         self._validate_id(id)
@@ -139,29 +132,55 @@ class Book(BookBase):
         return url
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convertit l'objet Book en dictionnaire."""
+        """
+        Convertit l'objet Book en dictionnaire.
+        
+        Returns:
+            Dict[str, Any]: Un dictionnaire contenant toutes les propriétés du livre.
+        """
         return {
             "id": self.id,
             "title": self.title,
-            "category": self.category,
             "price": self.price,
+            "rating": self.rating,
+            "category": self.category,
             "stock": self.stock,
             "created_at": self.created_at,
-            "rating": self.rating,
-            "url": self.url
+            "updated_at": self.updated_at,
+            "url": self.url,
+            "tags": self.tags
         }
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Book':
-        """Crée une instance de Book à partir d'un dictionnaire."""
+        """
+        Crée une instance de Book à partir d'un dictionnaire.
+        
+        Args:
+            data: Dictionnaire contenant les données du livre.
+                Doit contenir au minimum 'id', 'title', 'price' et 'url'.
+                
+        Returns:
+            Book: Une nouvelle instance de Book.
+            
+        Raises:
+            ValidationError: Si les champs obligatoires sont manquants.
+        """
+        required_fields = ['id', 'title', 'price', 'url']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            raise ValidationError(f"Champs obligatoires manquants: {', '.join(missing_fields)}")
+            
         return cls(
-            id=data.get('id'),
-            title=data.get('title', ''),
-            category=data.get('category'),
-            price=data.get('price', 0.0),
-            stock=data.get('stock', 0),
-            created_at=data.get('created_at'),
+            id=data['id'],
+            title=data['title'],
+            price=data['price'],
+            url=data['url'],
+            stock=data.get('stock', -1),
             rating=data.get('rating'),
-            url=data.get('url')
+            category=data.get('category'),
+            created_at=data.get('created_at'),
+            updated_at=data.get('updated_at'),
+            tags=data.get('tags', [])
         )
         
     def __str__(self) -> str:

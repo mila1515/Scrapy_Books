@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from datetime import datetime
 from dotenv import load_dotenv
@@ -53,31 +54,31 @@ class SQLitePipeline:
     def open_spider(self, spider):
         """Initialise la connexion à la base de données"""
         try:
-            self.conn = sqlite3.connect('books.db')
+            # Chemin vers la base de données partagée avec l'API
+            db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'monprojet', 'books.db')
+            
+            # Vérifier si le fichier de base de données existe
+            if not os.path.exists(db_path):
+                raise sqlite3.Error(f"Le fichier de base de données n'existe pas: {db_path}")
+                
+            self.conn = sqlite3.connect(db_path)
             self.conn.row_factory = sqlite3.Row
             self.cur = self.conn.cursor()
-            self._create_tables()
-            spider.logger.info("Connexion à la base de données SQLite établie")
+            
+            # Vérifier si la table existe
+            self.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books'")
+            if not self.cur.fetchone():
+                raise sqlite3.Error("La table 'books' n'existe pas dans la base de données")
+                
+            spider.logger.info(f"Connexion à la base de données SQLite établie: {db_path}")
+            
         except sqlite3.Error as e:
             spider.logger.error(f"Erreur de connexion à SQLite: {e}")
             raise
-
+            
     def _create_tables(self):
-        """Crée les tables si elles n'existent pas"""
-        self.cur.execute('''
-            CREATE TABLE IF NOT EXISTS books (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                price REAL,
-                rating INTEGER,
-                category TEXT,
-                stock INTEGER DEFAULT -1,
-                url TEXT UNIQUE NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        self.conn.commit()
+        """Méthode désactivée car on utilise une base de données existante"""
+        pass
 
     def process_item(self, item, spider):
         """Traite et enregistre un item dans la base de données"""

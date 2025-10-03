@@ -1,9 +1,11 @@
 from contextlib import contextmanager
 from typing import List, Optional, Any, Dict, Union, Tuple
+import sqlite3
+import logging
+import os
 
 from books_api.data.sqlite import get_connection, DatabaseError
 from books_api.domain.book import Book
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +16,15 @@ class BookRepository:
     """
     
     def __init__(self):
-        """Initialise le repository sans établir immédiatement de connexion."""
-        pass
+        """Initialise le repository."""
+        from books_api.data.config import BASE_DIR
+        # Utiliser le chemin absolu vers la base de données
+        db_path = os.path.join(BASE_DIR, 'monprojet', 'books.db')
+        self.db_path = os.path.abspath(db_path).replace('\\', '/')
+        # Forcer l'utilisation de SQLite avec le chemin absolu
+        os.environ['DATABASE_URL'] = f'sqlite:///{self.db_path}'
+        logger.info(f"Initialisation du BookRepository avec la base de données: {self.db_path}")
+        logger.info(f"URL de la base de données: {os.environ.get('DATABASE_URL')}")
         
     @contextmanager
     def _get_cursor(self) -> Any:
@@ -77,62 +86,6 @@ class BookRepository:
             logger.error(f"Erreur lors de l'exécution de la requête: {e}")
             raise DatabaseError(f"Erreur lors de l'exécution de la requête: {e}") from e
     
-    def create_tables(self) -> None:
-        """Crée les tables nécessaires si elles n'existent pas."""
-        create_table_query = """
-        CREATE TABLE IF NOT EXISTS books (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            category TEXT,
-            price REAL NOT NULL,
-            stock INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL,
-            rating REAL,
-            url TEXT,
-            UNIQUE(title)
-        )
-        """
-        self._execute_query(create_table_query, fetch_all=False)
-        logger.info("Tables vérifiées/créées avec succès")
-    
-    def add_book(self, book: Book) -> Book:
-        """
-        Ajoute un nouveau livre à la base de données.
-        
-        Args:
-            book: L'objet Book à ajouter.
-            
-        Returns:
-            Book: Le livre ajouté avec son ID.
-            
-        Raises:
-            DatabaseError: Si une erreur survient lors de l'ajout.
-        """
-        query = """
-        INSERT INTO books (title, category, price, stock, created_at, rating, url)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """
-        params = (
-            book.title, 
-            book.category, 
-            book.price, 
-            book.stock, 
-            book.created_at,
-            book.rating,
-            book.url
-        )
-        
-        try:
-            with self._get_cursor() as cursor:
-                cursor.execute(query, params)
-                book.id = cursor.lastrowid
-                cursor.connection.commit()
-                logger.info("Livre ajouté avec l'ID: %s", book.id)
-                return book
-        except Exception as e:
-            logger.error("Erreur lors de l'ajout du livre: %s", str(e))
-            raise DatabaseError(f"Impossible d'ajouter le livre: {e}") from e
-    
     def get_book_by_id(self, book_id: int) -> Optional[Book]:
         """
         Récupère un livre par son ID.
@@ -164,29 +117,53 @@ class BookRepository:
             logger.error("Erreur lors de la récupération du livre ID %s: %s", book_id, str(e))
             raise DatabaseError(f"Impossible de récupérer le livre avec l'ID {book_id}: {e}") from e
     
-    def get_all_books(self) -> List[Book]:
+    def get_all_books(self, skip: int = 0, limit: int = 100) -> List[Book]:
         """
-        Récupère tous les livres de la base de données.
+        Récupère une liste paginée de livres depuis la base de données.
         
+        Args:
+            skip: Nombre d'éléments à sauter (pour la pagination).
+            limit: Nombre maximum d'éléments à retourner.
+            
         Returns:
-            List[Book]: Une liste de tous les livres.
+            List[Book]: Une liste paginée des livres disponibles.
             
         Raises:
-            DatabaseError: Si une erreur survient lors de la récupération.
+            DatabaseError: Si une erreur survient lors de la récupération des livres.
         """
         query = """
         SELECT id, title, category, price, stock, created_at, rating, url
         FROM books
-        ORDER BY title
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
         """
         
         try:
-            results = self._execute_query(query)
-            return [Book(**row) for row in results] if results else []
-            
+            with self._get_cursor() as cursor:
+                cursor.execute(query, (limit, skip))
+                results = cursor.fetchall()
+                
+                books = []
+                for row in results:
+                    book = Book(
+                        id=row[0],
+                        title=row[1],
+                        category=row[2],
+                        price=row[3],
+                        stock=row[4],
+                        created_at=row[5],
+                        rating=row[6],
+                        url=row[7]
+                    )
+                    books.append(book)
+                
+                logger.info("%d livres récupérés (skip=%d, limit=%d)", len(books), skip, limit)
+                return books
+                
         except Exception as e:
-            logger.error("Erreur lors de la récupération de tous les livres: %s", str(e))
-            raise DatabaseError(f"Impossible de récupérer les livres: {e}") from e
+            logger.error("Erreur lors de la récupération des livres (skip=%d, limit=%d): %s", 
+                        skip, limit, str(e))
+            raise DatabaseError(f"Impossible de récupérer la liste des livres: {e}") from e
     
     def update_book(self, book: Book) -> Optional[Book]:
         """
@@ -254,32 +231,133 @@ class BookRepository:
         Recherche des livres par titre ou catégorie.
         
         Args:
-            query: La chaîne de recherche.
+            query: Terme de recherche (titre ou catégorie).
             
         Returns:
-            List[Book]: Une liste de livres correspondant à la recherche.
+            List[Book]: Liste des livres correspondants à la recherche.
             
         Raises:
             DatabaseError: Si une erreur survient lors de la recherche.
         """
-        search_query = """
-        SELECT id, title, category, price, stock, created_at, rating, url
-        FROM books
+        search_query = f"%{query}%"
+        query_sql = """
+        SELECT * FROM books 
         WHERE title LIKE ? OR category LIKE ?
-        ORDER BY title
+        ORDER BY created_at DESC
         """
-        search_param = f"%{query}%"
         
         try:
-            results = self._execute_query(
-                search_query, 
-                (search_param, search_param)
-            )
-            return [Book(**row) for row in results] if results else []
-            
+            with self._get_cursor() as cursor:
+                cursor.execute(query_sql, (search_query, search_query))
+                results = cursor.fetchall()
+                return [self._row_to_book(row) for row in results]
         except Exception as e:
-            logger.error("Erreur lors de la recherche de livres avec la requête '%s': %s", 
-                        query, str(e))
-            raise DatabaseError(
-                f"Erreur lors de la recherche de livres avec la requête '{query}': {e}"
-            ) from e
+            logger.error(f"Erreur lors de la recherche de livres avec le terme '{query}': {e}")
+            raise DatabaseError(f"Erreur lors de la recherche de livres: {e}") from e
+    
+    def get_books_by_tag(self, tag: str, skip: int = 0, limit: int = 100) -> List[Book]:
+        """
+        Récupère les livres ayant un tag spécifique.
+        
+        Args:
+            tag: Le tag à rechercher (insensible à la casse).
+            skip: Nombre d'éléments à sauter (pour la pagination).
+            limit: Nombre maximum d'éléments à retourner.
+            
+        Returns:
+            List[Book]: Liste des livres ayant le tag spécifié.
+            
+        Raises:
+            DatabaseError: Si une erreur survient lors de la recherche.
+        """
+        query = """
+        SELECT DISTINCT b.* FROM books b
+        JOIN book_tags bt ON b.id = bt.book_id
+        WHERE LOWER(bt.tag) = LOWER(?)
+        ORDER BY b.created_at DESC
+        LIMIT ? OFFSET ?
+        """
+        
+        try:
+            with self._get_cursor() as cursor:
+                cursor.execute(query, (tag, limit, skip))
+                results = cursor.fetchall()
+                return [self._row_to_book(row) for row in results]
+        except Exception as e:
+            logger.error(f"Erreur lors de la recherche de livres avec le tag '{tag}': {e}")
+            raise DatabaseError(f"Erreur lors de la recherche par tag: {e}") from e
+            
+    def get_all_tags(self) -> List[Dict[str, Any]]:
+        """
+        Récupère la liste de toutes les catégories uniques avec leur nombre d'occurrences.
+        
+        Returns:
+            List[Dict[str, Any]]: Liste des catégories avec leur nombre d'occurrences.
+            
+        Raises:
+            DatabaseError: Si une erreur survient lors de la récupération des catégories.
+        """
+        logger.info("Début de la récupération des catégories...")
+        logger.info(f"Chemin de la base de données: {self.db_path}")
+        
+        try:
+            # Vérifier si le fichier de base de données existe
+            import os
+            if not os.path.exists(self.db_path):
+                error_msg = f"Le fichier de base de données n'existe pas à l'emplacement: {self.db_path}"
+                logger.error(error_msg)
+                raise DatabaseError(error_msg)
+                
+            with self._get_cursor() as cursor:
+                # 1. Vérifier si la table books existe
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books';")
+                if not cursor.fetchone():
+                    error_msg = "La table 'books' n'existe pas dans la base de données"
+                    logger.error(error_msg)
+                    return []
+                
+                # 2. Vérifier si la colonne category existe
+                cursor.execute("PRAGMA table_info(books);")
+                columns = [col[1] for col in cursor.fetchall()]
+                logger.info(f"Colonnes de la table 'books': {columns}")
+                
+                if 'category' not in columns:
+                    logger.warning("La colonne 'category' n'existe pas dans la table 'books'.")
+                    return []
+                
+                # 3. Récupérer toutes les catégories avec leur compte
+                # en excluant les valeurs qui ne sont pas des vraies catégories
+                query = """
+                SELECT 
+                    TRIM(category) as tag,
+                    COUNT(*) as count
+                FROM books
+                WHERE category IS NOT NULL 
+                  AND category != ''
+                  AND LOWER(category) NOT IN ('add a comment', 'default', 'none', 'n/a', 'null')
+                GROUP BY TRIM(category)
+                HAVING COUNT(*) > 0
+                ORDER BY count DESC, tag ASC
+                """
+                
+                logger.info(f"Exécution de la requête: {query}")
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                
+                if not rows:
+                    logger.warning("Aucune catégorie valide trouvée dans la table 'books'.")
+                    return []
+                
+                # 4. Formater les résultats
+                result = [{"tag": row[0], "count": int(row[1])} for row in rows]
+                logger.info(f"Récupération réussie de {len(result)} catégories")
+                
+                # Afficher les 5 premières catégories pour le débogage
+                logger.info(f"Exemples de catégories: {result[:5]}")
+                
+                return result
+                
+        except Exception as e:
+            error_msg = f"Erreur lors de la récupération des catégories: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e

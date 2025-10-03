@@ -33,9 +33,10 @@ app.add_middleware(CORSMiddleware, **CORS_CONFIG)
 
 # Dépendances
 def get_book_usecases():
+    """Retourne une instance de BookUseCases configurée avec le repository."""
     repo = BookRepository()
-    # Créer les tables si elles n'existent pas
-    repo.create_tables()
+    # Ne pas créer les tables automatiquement car on utilise une base existante
+    logger.info(f"Utilisation de la base de données: {repo.db_path}")
     return BookUseCases(repo)
 
 # Gestionnaire d'erreurs global

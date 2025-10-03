@@ -50,6 +50,8 @@ Thumbs.db
 *.sqlite3
 books.db
 .books.db
+books.db.backup
+*.db.backup
 
 # --- IDE et éditeurs ---
 .idea/
@@ -69,3 +71,6 @@ htmlcov/
 coverage/
 *.bak
 *~
+
+*.db-shm
+*.db-wal

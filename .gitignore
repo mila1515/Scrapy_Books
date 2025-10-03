@@ -1,0 +1,79 @@
+# --- Fichiers Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyd
+*.pyo
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Environnements virtuels ---
+venv/
+.env/
+.venv/
+env/
+ENV/
+env.bak/
+
+# --- Fichiers systèmes ---
+.DS_Store
+Thumbs.db
+
+# --- Logs et sorties ---
+*.log
+*.pot
+*.mo
+
+# --- Fichiers générés par Scrapy ---
+*.csv
+*.json
+*.xml
+
+# --- Base de données ---
+*.db
+*.sqlite3
+books.db
+.books.db
+books.db.backup
+*.db.backup
+
+# --- IDE et éditeurs ---
+.idea/
+vscode/
+.history/
+
+# --- Tests et couverture ---
+.coverage
+htmlcov/
+.tox/
+
+# --- Fichiers de configuration ---
+.env
+*.env
+
+# --- Autres ---
+coverage/
+*.bak
+*~
+
+*.db-shm
+*.db-wal
+.history
+history
+.scrapy/

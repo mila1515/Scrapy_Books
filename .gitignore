@@ -18,6 +18,48 @@ lib64/
 parts/
 sdist/
 var/
+
+# --- Fichiers d'historique et de configuration ---
+.history/
+.hypothesis/
+.ipynb_checkpoints/
+.mypy_cache/
+.pytest_cache/
+.python-version
+.ropeproject/
+.vscode/
+.idea/
+.DS_Store
+.env
+.venv
+env/
+venv/
+ENV/
+
+# --- Fichiers de sortie et logs ---
+output/
+logs/
+*.log
+
+# --- Fichiers de base de données ---
+*.db
+*.sqlite3
+*.sqlite
+*.db-journal
+*.sql
+
+# --- Fichiers temporaires ---
+*.swp
+*.swo
+*~
+
+# --- Fichiers système ---
+Thumbs.db
+desktop.ini
+
+# --- Fichiers de scraping ---
+scrapy_books/output/*
+!scrapy_books/output/.gitkeep
 wheels/
 *.egg-info/
 .installed.cfg
@@ -74,3 +116,5 @@ coverage/
 
 *.db-shm
 *.db-wal
+
+.history/
